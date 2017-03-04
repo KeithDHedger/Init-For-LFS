@@ -57,7 +57,6 @@ doService ()
 			done
 	fi
 			
-	echo XXXXXXXXxx
 	echo $pid > $pidfile
 
 	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
@@ -95,7 +94,12 @@ runAllServices ()
 							;;
 					esac
 				done < ${SERVICEFOLDER}/$REPLY
-			doService
+	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
+			if [ "X$COMMAND" != "X" ];then
+			 	if [ "X$RUNTYPE" = "Xonce" ];then
+					doService
+				fi
+			fi
 		done < ${SERVICEDATA}/services
 }	
 
