@@ -2,18 +2,19 @@
 
 #©keithhedger Sat 4 Mar 15:35:56 GMT 2017 kdhedger68713@gmail.com
 
-SERVICESFILE=/tmp/services
-SERVICESFOLDER=/tmp
+
+SERVICEFOLDER=services
+SERVICEFILES=services
 LOGFILE=
 COMMAND=
 RUNTYPE=
 PIDFILE=
-PIDFOLDER=/tmp/servicepids
+PIDFOLDER=servicepids
 BASENAME=
-LOGSFOLDER=/tmp/servicelogs
+LOGSFOLDER=servicelogs
 RETRYS=3
 
-rm ${PIDFOLDER}/*.pid
+rm ${PIDFOLDER}/*.pid||true
 
 doService ()
 {
@@ -22,8 +23,8 @@ doService ()
 	local pidfile
 	local logfile
 
-
-echo ">>>>>>>>>>>>>>>>"
+	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$PIDFILE, basename=$BASENAME "
+return
 
 	if [ "X$COMMAND" != "X" ];then
 	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$PIDFILE, basename=$BASENAME "
@@ -54,7 +55,7 @@ echo ">>>>>>>>>>>>>>>>"
 
 while read
 	do
-		#echo $REPLY
+		echo $REPLY
 		BASENAME=${REPLY%%.?*}
 		LOGFILE=
 		COMMAND=
@@ -81,7 +82,7 @@ while read
 						PIDFILE=$ARGS
 						;;
 				esac
-			done < ${SERVICESFOLDER}/$REPLY
+			done < ${SERVICEFOLDER}/$REPLY
 		doService
-	done < $SERVICESFILE
+	done < ${SERVICEFOLDER}/${SERVICEFILES}
 	
