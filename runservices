@@ -1,0 +1,87 @@
+#!/bin/bash -e
+
+#©keithhedger Sat 4 Mar 15:35:56 GMT 2017 kdhedger68713@gmail.com
+
+SERVICESFILE=/tmp/services
+SERVICESFOLDER=/tmp
+LOGFILE=
+COMMAND=
+RUNTYPE=
+PIDFILE=
+PIDFOLDER=/tmp/servicepids
+BASENAME=
+LOGSFOLDER=/tmp/servicelogs
+RETRYS=3
+
+rm ${PIDFOLDER}/*.pid
+
+doService ()
+{
+	local command
+	local pid
+	local pidfile
+	local logfile
+
+
+echo ">>>>>>>>>>>>>>>>"
+
+	if [ "X$COMMAND" != "X" ];then
+	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$PIDFILE, basename=$BASENAME "
+
+
+	if [ "X$LOGFILE" != "X" ];then
+		logfile=${LOGSFOLDER}/${LOGFILE}
+	else
+		logfile="/dev/null"
+	fi
+
+	if [ "X$PIDFILE" = "X" ];then
+		pidfile=${PIDFOLDER}/${BASENAME}.pid
+	fi
+
+
+	
+	($COMMAND) &>$logfile &
+	pid=$!
+
+#
+	echo $pid > $pidfile
+#	echo $COMMAND
+#	echo $LOGFILE
+#	echo ">>>$pid"
+	fi
+}
+
+while read
+	do
+		#echo $REPLY
+		BASENAME=${REPLY%%.?*}
+		LOGFILE=
+		COMMAND=
+		RUNTYPE=
+		PIDFILE=
+		
+		while read
+			do
+				#echo $REPLY
+				
+				COM=$(echo $REPLY|awk '{print $1}')
+				ARGS="$(echo -e "${REPLY:${#COM}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+				case "$COM" in
+					"LOGFILE")
+						LOGFILE=$ARGS
+						;;
+					"RUNTYPE")
+						RUNTYPE=$ARGS
+						;;
+					"COMMAND")
+						COMMAND=$ARGS
+						;;
+					"PIDFILE")
+						PIDFILE=$ARGS
+						;;
+				esac
+			done < ${SERVICESFOLDER}/$REPLY
+		doService
+	done < $SERVICESFILE
+	
