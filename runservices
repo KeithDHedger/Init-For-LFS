@@ -125,6 +125,7 @@ runOneService ()
 
 	pidfile=${PIDFOLDER}/${base}.pid	
 	logfile=${LOGSFOLDER}/${base}.log
+	runtype="once"
 
 	while read
 		do
@@ -146,7 +147,8 @@ runOneService ()
 			esac
 		done < ${SERVICEFOLDER}/${base}.service
 
-	if [ "X$command" != "X" ] && [ "X$runtype" = "Xonce" ] ;then
+#	if [ "X$command" != "X" ] && [ "X$runtype" = "Xonce" ] ;then
+	if [ "X$command" != "X" ] ;then
 			doRunService $base "$command" $logfile $pidfile $runtype
 	fi
 }
