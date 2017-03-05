@@ -63,20 +63,69 @@ doService ()
 	fi
 }
 
+doRunService ()
+{
+	local base command logfile pidfile runtype
+	local pid
+	local tries
+
+	base=$1
+	command=$2
+	logfile=$3
+	pidfile=$4
+	runtype=$5
+
+#	echo " basename=$1, command=$2 log=$3, pidfile=$4, rt=$5"
+#	echo " basename=$base, command=$command log=$logfile, pidfile=$pidfile, rt=$runtype"
+
+	if [ "X$command" != "X" ];then
+
+		if [ -e "$pidfile" ];then
+			if [ "X$(ps  --no-headers $(cat "$pidfile"))" = "X" ];then
+				echo "Removing stale pidfile ..."
+				rm $pidfile||true
+			else
+				echo "Already running under my control, doing nothing ..."
+			return
+			fi
+		fi
+
+		($command) &>$logfile &
+		pid=$!
+
+		if [ "X$(ps --no-headers $pid)" = "X" ];then
+			tries=$RETRYS
+			echo "Error runing command $command ..."
+			while [ "X$(ps --no-headers $pid)" = "X" ]
+				do
+					for((j=1;j<RETRYS;j++))
+						do
+							($command) &>$logfile &
+							pid=$!
+							((tries--))
+							echo "$tries tries left ..."
+							sleep 1
+						done
+					echo "Can't run $base, giving up ..."
+					rm $pidfile &>/dev/null||true
+					return
+				done
+		fi
+		echo $pid > $pidfile
+	fi
+}
+
 runOneService ()
 {
 	local com
 	local args
 	local base logfile command runtype pidfile
 
-#	BASENAME=${1%%.?*}
-#	LOGFILE=
-#	COMMAND=
-#	RUNTYPE=
-#	PIDFILE=
-
 	base=${1%%.?*}
-	
+
+	pidfile=${PIDFOLDER}/${base}.pid	
+	logfile=${LOGSFOLDER}/${base}.log
+
 	while read
 		do
 			com=$(echo $REPLY|awk '{print $1}')
@@ -96,55 +145,38 @@ runOneService ()
 					;;
 			esac
 		done < ${SERVICEFOLDER}/${base}.service
-echo "log=$logfile, rt=$runtype, command=$command, pidfile=$pidfile, basename=$base "
-	
+
+	if [ "X$command" != "X" ] && [ "X$runtype" = "Xonce" ] ;then
+			doRunService $base "$command" $logfile $pidfile $runtype
+	fi
 }
 
 runAllServices ()
 {
-	rm ${PIDFOLDER}/*.pid||true
+	rm ${PIDFOLDER}/*.pid &>/dev/null||true
 	while read
 		do
-	#		echo $REPLY
-			BASENAME=${REPLY%%.?*}
-			LOGFILE=
-			COMMAND=
-			RUNTYPE=
-			PIDFILE=
-		
-			while read
-				do
-					COM=$(echo $REPLY|awk '{print $1}')
-					ARGS="$(echo -e "${REPLY:${#COM}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-					case "$COM" in
-						"LOGFILE")
-							LOGFILE=$ARGS
-							;;
-						"RUNTYPE")
-							RUNTYPE=$ARGS
-							;;
-						"COMMAND")
-							COMMAND=$ARGS
-							;;
-						"PIDFILE")
-							PIDFILE=$ARGS
-							;;
-					esac
-				done < ${SERVICEFOLDER}/$BASENAME
-#	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
-			if [ "X$COMMAND" != "X" ];then
-			 	if [ "X$RUNTYPE" = "Xonce" ];then
-					doService
-				fi
-			fi
+			runOneService ${REPLY%%.?*}
 		done < ${SERVICEDATA}/services
 }	
 
 killService ()
 {
-	kill -9 $(cat ${PIDFOLDER}/$1.pid)
-	rm  ${PIDFOLDER}/$1.pid
+	if [ -e  ${PIDFOLDER}/$1.pid ];then
+		kill -9 $(cat ${PIDFOLDER}/$1.pid)
+		rm  ${PIDFOLDER}/$1.pid &>/dev/null||true
+	else
+		echo "$1 not under my control ..."
+	fi
 }
+
+killAllServices ()
+{
+	while read
+		do
+			killService ${REPLY%%.?*}
+		done < ${SERVICEDATA}/services
+}	
 
 main ()
 {
@@ -153,14 +185,17 @@ main ()
 		exit 1
 	else	
 		case $1 in
+			"RUN")
+				runOneService $2
+				;;
 			"RUNALL")
 				runAllServices;
 				;;
 			"KILL")
 				killService $2
 				;;
-			"RUN")
-				runOneService $2
+			"KILLALL")
+				killAllServices
 				;;
 		esac
 	fi
