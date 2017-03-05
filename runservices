@@ -2,17 +2,23 @@
 
 #©keithhedger Sat 4 Mar 15:35:56 GMT 2017 kdhedger68713@gmail.com
 
-SERVICEDATA=servicedata
-SERVICEFOLDER=servicefiles
-LOGFILE=
-COMMAND=
-RUNTYPE=
-PIDFILE=
-PIDFOLDER=servicepids
-BASENAME=
-LOGSFOLDER=servicelogs
-RETRYS=3
+init ()
+{
+	SERVICEBASEFOLDER=/run/StartupServices
+	SERVICEDATA=/media/LinuxData/Development/Projects/StartupServices/servicedata
+	SERVICEFILESFOLDER=/media/LinuxData/Development/Projects/StartupServices/servicefiles
+	SERVICERUNFILES=${SERVICEBASEFOLDER}/servicerunfiles
+	LOGFILE=
+	COMMAND=
+	RUNTYPE=
+	PIDFILE=
+	PIDFOLDER=${SERVICEBASEFOLDER}/servicepids
+	BASENAME=
+	LOGSFOLDER=${SERVICEBASEFOLDER}/servicelogs
+	RETRYS=3
 
+	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+}
 
 doService ()
 {
@@ -76,10 +82,9 @@ doRunService ()
 	runtype=$5
 
 #	echo " basename=$1, command=$2 log=$3, pidfile=$4, rt=$5"
-#	echo " basename=$base, command=$command log=$logfile, pidfile=$pidfile, rt=$runtype"
+	echo " basename=$base, command=$command log=$logfile, pidfile=$pidfile, rt=$runtype"
 
 	if [ "X$command" != "X" ];then
-
 		if [ -e "$pidfile" ];then
 			if [ "X$(ps  --no-headers $(cat "$pidfile"))" = "X" ];then
 				echo "Removing stale pidfile ..."
@@ -90,28 +95,46 @@ doRunService ()
 			fi
 		fi
 
-		($command) &>$logfile &
-		pid=$!
+		if [ $runtype = "once" ];then
+			($command) &>$logfile &
+			pid=$!
 
-		if [ "X$(ps --no-headers $pid)" = "X" ];then
-			tries=$RETRYS
-			echo "Error runing command $command ..."
-			while [ "X$(ps --no-headers $pid)" = "X" ]
-				do
-					for((j=1;j<RETRYS;j++))
-						do
-							($command) &>$logfile &
-							pid=$!
-							((tries--))
-							echo "$tries tries left ..."
-							sleep 1
-						done
-					echo "Can't run $base, giving up ..."
-					rm $pidfile &>/dev/null||true
-					return
-				done
+			if [ "X$(ps --no-headers $pid)" = "X" ];then
+				tries=$RETRYS
+				echo "Error runing command $command ..."
+				while [ "X$(ps --no-headers $pid)" = "X" ]
+					do
+						for((j=1;j<RETRYS;j++))
+							do
+								($command) &>$logfile &
+								pid=$!
+								((tries--))
+								echo "$tries tries left ..."
+								sleep 1
+							done
+						echo "Can't run $base, giving up ..."
+						rm $pidfile &>/dev/null||true
+					done
+			fi
+			echo $pid > $pidfile
 		fi
-		echo $pid > $pidfile
+
+		if [ $runtype = "keepalive" ];then
+			touch ${SERVICERUNFILES}/${base}.keepalive
+			file=${SERVICERUNFILES}/${base}
+			cat > $file << EOF
+#!/bin/bash
+	while [ -e ${base}.keepalive ]
+		do
+			($command) &>$logfile &
+			pid=\$!
+			echo \$pid > $pidfile
+			waitpid \$pid
+		done
+EOF
+			chmod +x $file
+			(cd ${SERVICERUNFILES};./${base}) &
+		fi
 	fi
 }
 
@@ -145,7 +168,7 @@ runOneService ()
 					pidfile=$args
 					;;
 			esac
-		done < ${SERVICEFOLDER}/${base}.service
+		done < ${SERVICEFILESFOLDER}/${base}.service
 
 #	if [ "X$command" != "X" ] && [ "X$runtype" = "Xonce" ] ;then
 	if [ "X$command" != "X" ] ;then
@@ -164,7 +187,9 @@ runAllServices ()
 
 killService ()
 {
-	if [ -e  ${PIDFOLDER}/$1.pid ];then
+	if [ -e  ${PIDFOLDER}/${1}.pid ];then
+		rm ${SERVICERUNFILES}/${1}.keepalive &>/dev/null||true
+		rm ${SERVICERUNFILES}/${1} &>/dev/null||true
 		kill -9 $(cat ${PIDFOLDER}/$1.pid)
 		rm  ${PIDFOLDER}/$1.pid &>/dev/null||true
 	else
@@ -203,6 +228,7 @@ main ()
 	fi
 }
 
+init
 main $@
 
 
