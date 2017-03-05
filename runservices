@@ -63,12 +63,49 @@ doService ()
 	fi
 }
 
+runOneService ()
+{
+	local com
+	local args
+	local base logfile command runtype pidfile
+
+#	BASENAME=${1%%.?*}
+#	LOGFILE=
+#	COMMAND=
+#	RUNTYPE=
+#	PIDFILE=
+
+	base=${1%%.?*}
+	
+	while read
+		do
+			com=$(echo $REPLY|awk '{print $1}')
+			args="$(echo -e "${REPLY:${#com}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+			case "$com" in
+				"LOGFILE")
+					logfile=$args
+					;;
+				"RUNTYPE")
+					runtype=$args
+					;;
+				"COMMAND")
+					command=$args
+					;;
+				"PIDFILE")
+					pidfile=$args
+					;;
+			esac
+		done < ${SERVICEFOLDER}/${base}.service
+echo "log=$logfile, rt=$runtype, command=$command, pidfile=$pidfile, basename=$base "
+	
+}
+
 runAllServices ()
 {
 	rm ${PIDFOLDER}/*.pid||true
 	while read
 		do
-			echo $REPLY
+	#		echo $REPLY
 			BASENAME=${REPLY%%.?*}
 			LOGFILE=
 			COMMAND=
@@ -93,8 +130,8 @@ runAllServices ()
 							PIDFILE=$ARGS
 							;;
 					esac
-				done < ${SERVICEFOLDER}/$REPLY
-	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
+				done < ${SERVICEFOLDER}/$BASENAME
+#	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
 			if [ "X$COMMAND" != "X" ];then
 			 	if [ "X$RUNTYPE" = "Xonce" ];then
 					doService
@@ -121,6 +158,9 @@ main ()
 				;;
 			"KILL")
 				killService $2
+				;;
+			"RUN")
+				runOneService $2
 				;;
 		esac
 	fi
