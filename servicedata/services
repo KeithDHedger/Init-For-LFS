@@ -1,2 +1,6 @@
 compton.service
-terminal.service
+lfssetwallpaper.service
+lfsdesktop.service
+lfspanels.service
+lfswmanager.service
+test.service
