@@ -16,8 +16,27 @@ init ()
 	BASENAME=
 	LOGSFOLDER=${SERVICEBASEFOLDER}/servicelogs
 	RETRYS=3
+	SLEEPTIME=1
+	MYLOG=${LOGSFOLDER}/runservices.log
+	VERBOSELEVEL=2
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+}
+
+printInfo ()
+{
+	case $VERBOSELEVEL in
+		0)
+			return
+			;;
+		1)
+			echo "$1" >> $MYLOG
+			;;
+		2)
+			echo "$1"
+			echo "$1" >> $MYLOG
+			;;
+		esac
 }
 
 doService ()
@@ -46,7 +65,7 @@ doService ()
 
 	if [ "X$(ps --no-headers $pid)" = "X" ];then
 		tries=$RETRYS
-		echo "Error runing command $COMMAND ..."
+		printInfo "Error runing command $COMMAND ..."
 		while [ "X$(ps --no-headers $pid)" = "X" ]
 			do
 				for((j=1;j<RETRYS;j++))
@@ -54,10 +73,10 @@ doService ()
 						($COMMAND) &>$logfile &
 						pid=$!
 						((tries--))
-						echo "$tries tries left ..."
+						printInfo "$tries tries left ..."
 						sleep 1
 					done
-				echo "Can't run $BASENAME, giving up ..."
+				printInfo "Can't run $BASENAME, giving up ..."
 				rm $pidfile &>/dev/null||true
 				return
 			done
@@ -65,7 +84,7 @@ doService ()
 			
 	echo $pid > $pidfile
 
-	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
+#	echo "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
 	fi
 }
 
@@ -90,10 +109,10 @@ doRunService ()
 	if [ "X$command" != "X" ];then
 		if [ -e "$pidfile" ];then
 			if [ "X$(ps  --no-headers $(cat "$pidfile"))" = "X" ];then
-				echo "Removing stale pidfile ..."
+				printInfo "Removing stale pidfile ..."
 				rm $pidfile||true
 			else
-				echo "Already running under my control, doing nothing ..."
+				printInfo "Already running under my control, doing nothing ..."
 			return
 			fi
 		fi
@@ -113,7 +132,7 @@ doRunService ()
         		        	break;
 						else
 #process terminated abnormally
-							echo "Try $j failed (returned $?), Trying again ..."
+							printInfo "Try $j failed (returned $?), Trying again ..."
 							failed=1
 						fi
 					else
@@ -123,9 +142,9 @@ doRunService ()
 					fi
 				done
 			if [ $failed -eq 1 ];then
-				echo "Giving up ..."
+				printInfo "Giving up ..."
 			else
-				echo "$base launched succsefully"
+				printInfo "$base launched succsefully"
 			fi
 		fi
 
@@ -191,7 +210,12 @@ runAllServices ()
 	rm ${PIDFOLDER}/*.pid &>/dev/null||true
 	while read
 		do
-			runOneService ${REPLY%%.?*}
+			if [ "X${REPLY##?*.}" = "Xservice" ];then
+				runOneService ${REPLY%%.?*}
+			else
+				printInfo "Evaluating command $REPLY"
+				eval "${REPLY}"
+			fi
 		done < ${SERVICEDATA}/services
 }	
 
@@ -203,7 +227,7 @@ killService ()
 		kill -9 $(cat ${PIDFOLDER}/$1.pid)
 		rm  ${PIDFOLDER}/$1.pid &>/dev/null||true
 	else
-		echo "$1 not under my control ..."
+		printInfo "$1 not under my control ..."
 	fi
 }
 
@@ -211,7 +235,9 @@ killAllServices ()
 {
 	while read
 		do
-			killService ${REPLY%%.?*}
+			if [ "X${REPLY##?*.}" = "Xservice" ];then
+				killService ${REPLY%%.?*}
+			fi
 		done < ${SERVICEDATA}/services
 }	
 
@@ -222,6 +248,20 @@ printLogfile ()
 		else
 			echo "No log for $1 ..."
 		fi
+}
+
+removeLog ()
+{
+	if [ -e  ${LOGSFOLDER}/${1}.log ];then
+		rm ${LOGSFOLDER}/${1}.log
+	else
+		echo "No log for $1 ..."
+	fi
+}
+
+removeAllLogs ()
+{
+	rm ${LOGSFOLDER}/*.log||true
 }
 
 main ()
@@ -245,6 +285,12 @@ main ()
 				;;
 			"LOGFILE")
 				printLogfile $2
+				;;
+			"RMLOG")
+				removeLog $2
+				;;
+			"RMALLLOGS")
+				removeAllLogs
 				;;
 		esac
 	fi

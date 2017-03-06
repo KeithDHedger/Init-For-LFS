@@ -1,6 +1,10 @@
 compton.service
 lfssetwallpaper.service
-lfsdesktop.service
 lfspanels.service
 lfswmanager.service
-test.service
+sleep 1
+lfsdesktop.service
+cairodock.service
+conky.service
+screensaver.service
+
