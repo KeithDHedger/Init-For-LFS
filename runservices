@@ -108,13 +108,15 @@ doRunService ()
 #	echo " basename=$base, command=$command log=$logfile, pidfile=$pidfile, rt=$runtype"
 
 	if [ "X$command" != "X" ];then
-		if [ -e "$pidfile" ];then
-			if [ "X$(ps  --no-headers $(cat "$pidfile"))" = "X" ];then
-				printInfo "Removing stale pidfile ..."
-				rm $pidfile||true
-			else
-				printInfo "Already running under my control, doing nothing ..."
-			return
+		if [ $runtype != "nocontrol" ];then
+			if [ -e "$pidfile" ];then
+				if [ "X$(ps  --no-headers $(cat "$pidfile"))" = "X" ];then
+					printInfo "Removing stale pidfile ..."
+					rm $pidfile||true
+				else
+					printInfo "Already running under my control, doing nothing ..."
+					return
+				fi
 			fi
 		fi
 
@@ -122,7 +124,7 @@ doRunService ()
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-					$command &>$logfile &
+					$command &>>$logfile &
 					pid=$!
 #check whether process is still running
 					count=$(ps -A| grep $pid |wc -l)
@@ -157,7 +159,7 @@ doRunService ()
 	sleep 1
 	while [ -e ${base}.keepalive ]
 		do
-			($command) &>$logfile &
+			($command) &>>$logfile &
 			pid=\$!
 			echo \$pid > $pidfile
 			waitpid \$pid
@@ -167,6 +169,36 @@ EOF
 			(cd ${SERVICERUNFILES};./${base}.runfile) &
 			printInfo "$base launched succsefully"
 		fi
+
+		if [ $runtype = "nocontrol" ];then
+			failed=0
+			for ((j=0;j<RETRYS;j++))
+				do
+					$command &>>$logfile &
+					pid=$!
+#check whether process is still running
+					count=$(ps -A| grep $pid |wc -l)
+#if process is already terminated, then there can be two cases, the process executed and stop successfully or it is terminated abnormally
+					if [[ $count -eq 0 ]];then
+#checks if process executed successfully or not
+						if wait $pid; then
+        		        	break;
+						else
+#process terminated abnormally
+							printInfo "Try $j failed (returned $?), Trying again ..."
+							failed=1
+						fi
+					else
+#process is still running
+						break
+					fi
+				done
+			if [ $failed -eq 1 ];then
+				printInfo "Giving up ..."
+			else
+				printInfo "$base launched succsefully"
+			fi
+		fi
 	fi
 }
 
@@ -175,6 +207,7 @@ runOneService ()
 	local com
 	local args
 	local base logfile command runtype pidfile
+	local comcnt
 
 	base=${1%%.?*}
 
@@ -182,6 +215,7 @@ runOneService ()
 	logfile=${LOGSFOLDER}/${base}.log
 	runtype="once"
 
+#set files etc
 	while read
 		do
 			com=$(echo $REPLY|awk '{print $1}')
@@ -193,19 +227,24 @@ runOneService ()
 				"RUNTYPE")
 					runtype=$args
 					;;
-				"COMMAND")
-					command=$args
-					;;
 				"PIDFILE")
 					pidfile=$args
 					;;
 			esac
 		done < ${SERVICEFILESFOLDER}/${base}.service
 
-#	if [ "X$command" != "X" ] && [ "X$runtype" = "Xonce" ] ;then
-	if [ "X$command" != "X" ] ;then
-			doRunService $base "$command" $logfile $pidfile $runtype
-	fi
+#run the commands
+	while read
+		do
+			com=$(echo $REPLY|awk '{print $1}')
+			args="$(echo -e "${REPLY:${#com}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+			if [ "X$com" = "XCOMMAND" ];then
+				if [ "X$args" != "X" ] ;then
+					doRunService $base "$args" $logfile $pidfile $runtype < /dev/null
+					sleep 0.1
+				fi
+			fi
+		done < <(cat ${SERVICEFILESFOLDER}/${base}.service)
 }
 
 runAllServices ()
@@ -252,12 +291,12 @@ printLogfile ()
 {
 	local logname="$1"
 
-	if [ "X$logname" ="XME" ];then
+	if [ "X$logname" = "XME" ];then
 		logname="runservices"
 	fi
 
-	if [ -e  ${LOGSFOLDER}/${1}.log ];then
-		cat ${LOGSFOLDER}/${1}.log
+	if [ -e  ${LOGSFOLDER}/${logname}.log ];then
+		cat ${LOGSFOLDER}/${logname}.log
 	else
 		echo "No log for $1 ..."
 	fi
@@ -277,12 +316,21 @@ removeAllLogs ()
 	rm ${LOGSFOLDER}/*.log||true
 }
 
+showPid ()
+{
+	if [ -e ${PIDFOLDER}/${1}.pid ];then
+		printInfo "$(cat ${PIDFOLDER}/${1}.pid)"
+	else
+		printInfo "$1 not under my control ..."
+	fi
+}
+
 main ()
 {
 	if [ "X$1" = "X" ];then
 		echo "need command ..."
 		exit 1
-	else	
+	else
 		case $1 in
 			"RUN")
 				runOneService $2
@@ -304,6 +352,9 @@ main ()
 				;;
 			"RMALLLOGS")
 				removeAllLogs
+				;;
+			"PID")
+				showPid $2;
 				;;
 		esac
 	fi

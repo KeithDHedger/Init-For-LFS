@@ -1,6 +1,10 @@
+
+xrandr.service
 compton.service
 
 lfssetwallpaper.service
+lfsdesktop.service
+
 lfswmanager.service
 sleep 1
 
@@ -14,8 +18,8 @@ conky.service
 screensaver.service
 
 
+setxkbmap -layout gb &>/dev/null &
+/home/keithhedger/Scripts/StartBindKeys &>/dev/null &
+
 chromium &
 thunderbird &
-
-sleep 1
-lfsdesktop.service
