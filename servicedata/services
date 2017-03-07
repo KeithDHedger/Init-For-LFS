@@ -1,10 +1,21 @@
 compton.service
+
 lfssetwallpaper.service
-lfspanels.service
 lfswmanager.service
 sleep 1
-lfsdesktop.service
+
+lfspanel-1.service
+lfspanel-2.service
+lfspanel-3.service
+
+
 cairodock.service
 conky.service
 screensaver.service
 
+
+chromium &
+thunderbird &
+
+sleep 1
+lfsdesktop.service

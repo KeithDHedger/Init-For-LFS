@@ -21,6 +21,7 @@ init ()
 	VERBOSELEVEL=2
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+	printInfo "$(date)"
 }
 
 printInfo ()
@@ -153,6 +154,7 @@ doRunService ()
 			file=${SERVICERUNFILES}/${base}.runfile
 			cat > $file << EOF
 #!/bin/bash
+	sleep 1
 	while [ -e ${base}.keepalive ]
 		do
 			($command) &>$logfile &
@@ -163,6 +165,7 @@ doRunService ()
 EOF
 			chmod +x $file
 			(cd ${SERVICERUNFILES};./${base}.runfile) &
+			printInfo "$base launched succsefully"
 		fi
 	fi
 }
@@ -210,11 +213,14 @@ runAllServices ()
 	rm ${PIDFOLDER}/*.pid &>/dev/null||true
 	while read
 		do
-			if [ "X${REPLY##?*.}" = "Xservice" ];then
-				runOneService ${REPLY%%.?*}
-			else
-				printInfo "Evaluating command $REPLY"
-				eval "${REPLY}"
+			if [ "X$REPLY" != "X" ];then
+				if [ "X${REPLY##?*.}" = "Xservice" ];then
+					printInfo "launching $REPLY"
+					runOneService ${REPLY%%.?*}
+				else
+					printInfo "Evaluating command $REPLY"
+					eval "${REPLY}"
+				fi
 			fi
 		done < ${SERVICEDATA}/services
 }	
@@ -223,9 +229,10 @@ killService ()
 {
 	if [ -e  ${PIDFOLDER}/${1}.pid ];then
 		rm ${SERVICERUNFILES}/${1}.keepalive &>/dev/null||true
-		rm ${SERVICERUNFILES}/${1} &>/dev/null||true
 		kill -9 $(cat ${PIDFOLDER}/$1.pid)
 		rm  ${PIDFOLDER}/$1.pid &>/dev/null||true
+		rm ${SERVICERUNFILES}/${1}.runfile &>/dev/null||true
+		printInfo "Killed $1"
 	else
 		printInfo "$1 not under my control ..."
 	fi
@@ -238,16 +245,22 @@ killAllServices ()
 			if [ "X${REPLY##?*.}" = "Xservice" ];then
 				killService ${REPLY%%.?*}
 			fi
-		done < ${SERVICEDATA}/services
+		done < <(tac ${SERVICEDATA}/services)
 }	
 
 printLogfile ()
 {
-		if [ -e  ${LOGSFOLDER}/${1}.log ];then
-			cat ${LOGSFOLDER}/${1}.log
-		else
-			echo "No log for $1 ..."
-		fi
+	local logname="$1"
+
+	if [ "X$logname" ="XME" ];then
+		logname="runservices"
+	fi
+
+	if [ -e  ${LOGSFOLDER}/${1}.log ];then
+		cat ${LOGSFOLDER}/${1}.log
+	else
+		echo "No log for $1 ..."
+	fi
 }
 
 removeLog ()
