@@ -1,0 +1,10 @@
+
+RUNTYPE nocontrol
+COMMAND echo "OK command 2"
+COMMAND echo "OK command 3"
+COMMAND xterm
+COMMAND leafpad
+COMMAND xterm
+
+COMMAND leafpad
+
