@@ -330,6 +330,32 @@ showPid ()
 	fi
 }
 
+showStatus ()
+{
+	local count
+	local pid
+
+	if [ -e ${PIDFOLDER}/${1}.pid ];then
+		pid=$(cat ${PIDFOLDER}/${1}.pid)
+		echo "Recorded pid of $1=$pid"
+		count=$(ps -A| grep $pid |wc -l)
+		if [[ $count -eq 0 ]];then
+			echo "Hmmm ... $1 seems to have exited"
+		else
+			echo "Details:"
+			ps $pid
+			if [ -e ${SERVICERUNFILES}/${1}.runfile ];then
+				echo "Keeping alive file=${SERVICERUNFILES}/${1}.runfile"
+			fi
+			if [ -e ${LOGSFOLDER}/${1}.log ];then
+				echo "Logfile=${LOGSFOLDER}/${1}.log"
+			fi
+		fi
+	else
+		printInfo "$1 not under my control ..."
+	fi
+}
+
 main ()
 {
 	if [ "X$1" = "X" ];then
@@ -361,6 +387,7 @@ main ()
 				echo "RUNTYPE	once|keepalive|nocontrol, default once"
 				echo "LOGFILE path, default $LOGSFOLDER/service.log"
 				echo "PIDFILE path, default $PIDFOLDER/service.pid"
+				echo "STATUS service"
 				exit 0
 				;;
 			"RUN")
@@ -386,6 +413,9 @@ main ()
 				;;
 			"PID")
 				showPid $2;
+				;;
+			"STATUS")
+				showStatus $2
 				;;
 		esac
 	fi
