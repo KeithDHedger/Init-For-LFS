@@ -156,13 +156,13 @@ doRunService ()
 			file=${SERVICERUNFILES}/${base}.runfile
 			cat > $file << EOF
 #!/bin/bash
-	sleep 1
 	while [ -e ${base}.keepalive ]
 		do
 			($command) &>>$logfile &
 			pid=\$!
 			echo \$pid > $pidfile
 			waitpid \$pid
+			sleep 1
 		done
 EOF
 			chmod +x $file
