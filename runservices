@@ -4,21 +4,26 @@
 
 init ()
 {
-	SERVICEBASEFOLDER=/run/StartupServices
-	SERVICEDATA=/media/LinuxData/Development/Projects/StartupServices/servicedata
-	SERVICEFILESFOLDER=/media/LinuxData/Development/Projects/StartupServices/servicefiles
-	SERVICERUNFILES=${SERVICEBASEFOLDER}/servicerunfiles
+	SERVICERUNFOLDER=/run/StartupServices
+	SERVICEDATA=~/StartupServices/servicedata
+	SERVICEFILESFOLDER=~/StartupServices/servicefiles
+	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
+	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
+	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
+	VERBOSELEVEL=2
+
+	if [ -e ~/StartupServices/servicedata/service.rc ];then
+		. ~/StartupServices/servicedata/service.rc
+	fi
+
 	LOGFILE=
 	COMMAND=
 	RUNTYPE=
 	PIDFILE=
-	PIDFOLDER=${SERVICEBASEFOLDER}/servicepids
 	BASENAME=
-	LOGSFOLDER=${SERVICEBASEFOLDER}/servicelogs
 	RETRYS=3
 	SLEEPTIME=1
 	MYLOG=${LOGSFOLDER}/runservices.log
-	VERBOSELEVEL=2
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	printInfo "$(date)"
@@ -332,6 +337,32 @@ main ()
 		exit 1
 	else
 		case $1 in
+			"HELP")
+				echo "Service run folder=$SERVICERUNFOLDER"
+				echo "Service Data=$SERVICEDATA"
+				echo "Service Files=$SERVICEFILESFOLDER"
+				echo "Service run files=$SERVICERUNFILES"
+				echo "Pid folder=$PIDFOLDER"
+				echo "Logs folder=$LOGSFOLDER"
+				echo "Format:"
+				echo "runservice RUN servicename"
+				echo "runservice RUNALL"
+				echo "runservice KILL servicename"
+				echo "runservice KILLALL"
+				echo "runservice LOGFILE servicename|ME"
+				echo "runservice RMLOG servicename"
+				echo "runservice RMALLLOGS"
+				echo "runservice PID servicename"
+				echo
+				echo "Servoce file format:"
+				echo "COMMAND command to run"
+				echo "COMMAND second command to run"
+				echo "COMMAND ..."
+				echo "RUNTYPE	once|keepalive|nocontrol, default once"
+				echo "LOGFILE path, default $LOGSFOLDER/service.log"
+				echo "PIDFILE path, default $PIDFOLDER/service.pid"
+				exit 0
+				;;
 			"RUN")
 				runOneService $2
 				;;

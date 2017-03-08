@@ -1,0 +1,8 @@
+SERVICERUNFOLDER=/run/StartupServices
+SERVICEDATA=~/StartupServices/servicedata
+SERVICEFILESFOLDER=~/StartupServices/servicefiles
+SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
+PIDFOLDER=${SERVICERUNFOLDER}/servicepids
+LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
+#0=none,1=log,2=log and echo
+VERBOSELEVEL=2
