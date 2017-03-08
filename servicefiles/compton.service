@@ -2,7 +2,7 @@
 #logfile optional
 #LOGFILE	compton.log
 
-#start up type once= just start, keep= restart if dies
+#start up type once= just start, keepalive= restart if dies
 RUNTYPE	once
 
 #command
