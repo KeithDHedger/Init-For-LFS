@@ -354,7 +354,7 @@ main ()
 				echo "runservice RMALLLOGS"
 				echo "runservice PID servicename"
 				echo
-				echo "Servoce file format:"
+				echo "Service file format:"
 				echo "COMMAND command to run"
 				echo "COMMAND second command to run"
 				echo "COMMAND ..."
