@@ -1,6 +1,0 @@
-
-#start up type once= just start, keepalive= restart if dies
-RUNTYPE	keepalive
-
-#command
-COMMAND	lfsdesktop

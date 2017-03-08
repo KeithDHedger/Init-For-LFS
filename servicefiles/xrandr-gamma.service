@@ -1,2 +1,0 @@
-COMMAND xrandr --output DVI-0 --gamma 1.35:1.28:1.56
-RUNTYPE	once
