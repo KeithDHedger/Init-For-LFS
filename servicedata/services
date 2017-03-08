@@ -3,7 +3,6 @@ xrandr.service
 compton.service
 
 lfssetwallpaper.service
-lfsdesktop.service
 
 lfswmanager.service
 sleep 1
@@ -23,3 +22,7 @@ setxkbmap -layout gb &>/dev/null &
 
 chromium &
 thunderbird &
+
+
+sleep 5
+lfsdesktop.service
