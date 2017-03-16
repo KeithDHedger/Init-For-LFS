@@ -1,5 +1,5 @@
 
-RUNTYPE nocontrol
+RUNTYPE wait
 COMMAND echo "OK command 2"
 COMMAND echo "OK command 3"
 COMMAND xterm

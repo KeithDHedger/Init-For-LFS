@@ -207,6 +207,11 @@ EOF
 				printInfo "$base launched succsefully"
 			fi
 		fi
+
+#wait for command to finish
+		if [ $runtype = "wait" ];then
+			$command &>>$logfile
+		fi
 	fi
 }
 
@@ -387,7 +392,7 @@ main ()
 				echo "COMMAND command to run"
 				echo "COMMAND second command to run"
 				echo "COMMAND ..."
-				echo "RUNTYPE	once|keepalive|nocontrol, default once"
+				echo "RUNTYPE	once|keepalive|nocontrol|wait, default once"
 				echo "LOGFILE path, default $LOGSFOLDER/service.log"
 				echo "PIDFILE path, default $PIDFOLDER/service.pid"
 				echo "STATUS service"

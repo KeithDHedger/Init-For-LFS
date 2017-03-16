@@ -1,28 +1,2 @@
 
-xrandr.service
-compton.service
-
-lfssetwallpaper.service
-
-lfswmanager.service
-sleep 1
-
-lfspanel-1.service
-lfspanel-2.service
-lfspanel-3.service
-
-
-cairodock.service
-conky.service
-screensaver.service
-
-
-setxkbmap -layout gb &>/dev/null &
-/home/keithhedger/Scripts/StartBindKeys &>/dev/null &
-
-chromium &
-thunderbird &
-
-
-sleep 5
-lfsdesktop.service
+test.service
