@@ -8,6 +8,7 @@ init ()
 	SERVICEDATA=~/StartupServices/servicedata
 	SERVICEFILESFOLDER=~/StartupServices/servicefiles
 	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
+	SERVICEFILE=${SERVICEFILE:-service}
 	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
 	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
 	VERBOSELEVEL=2
@@ -274,7 +275,7 @@ runAllServices ()
 					eval "${REPLY}"
 				fi
 			fi
-		done < ${SERVICEDATA}/services
+		done < ${SERVICEDATA}/${SERVICEFILE}
 }	
 
 killService ()
@@ -374,6 +375,7 @@ main ()
 			"HELP")
 				echo "Service run folder=$SERVICERUNFOLDER"
 				echo "Service Data=$SERVICEDATA"
+				echo "Service File=$SERVICEFILE"
 				echo "Service Files=$SERVICEFILESFOLDER"
 				echo "Service run files=$SERVICERUNFILES"
 				echo "Pid folder=$PIDFOLDER"
