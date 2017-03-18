@@ -5,13 +5,17 @@
 init ()
 {
 	SERVICERUNFOLDER=/run/StartupServices
-	SERVICEDATA=~/StartupServices/servicedata
-	SERVICEFILESFOLDER=~/StartupServices/servicefiles
+	SERVICEDATA=/etc/StartupServices/servicedata
+	SERVICEFILESFOLDER=/etc/StartupServices/servicefiles
 	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
-	SERVICEFILE=${SERVICEFILE:-service}
+	SERVICEFILE=${SERVICEFILE:-services}
 	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
 	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
 	VERBOSELEVEL=2
+
+	if [ -e /etc/StartupServices/servicedata/service.rc ];then
+		. /etc/StartupServices/servicedata/service.rc
+	fi
 
 	if [ -e ~/StartupServices/servicedata/service.rc ];then
 		. ~/StartupServices/servicedata/service.rc
@@ -25,6 +29,7 @@ init ()
 	RETRYS=3
 	SLEEPTIME=1
 	MYLOG=${LOGSFOLDER}/runservices.log
+	PIDFILECNT=1
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	printInfo "$(date)"
@@ -158,11 +163,11 @@ doRunService ()
 		fi
 
 		if [ $runtype = "keepalive" ];then
-			touch ${SERVICERUNFILES}/${base}.keepalive
-			file=${SERVICERUNFILES}/${base}.runfile
+			touch ${SERVICERUNFILES}/${base}.${PIDFILECNT}.keepalive
+			file=${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile
 			cat > $file << EOF
 #!/bin/bash
-	while [ -e ${base}.keepalive ]
+	while [ -e ${base}.${PIDFILECNT}.keepalive ]
 		do
 			($command) &>>$logfile &
 			pid=\$!
@@ -175,7 +180,7 @@ doRunService ()
 		done
 EOF
 			chmod +x $file
-			(cd ${SERVICERUNFILES};./${base}.runfile) &
+			(cd ${SERVICERUNFILES};./${base}.${PIDFILECNT}.runfile) &
 			printInfo "$base launched succsefully"
 		fi
 
@@ -222,13 +227,14 @@ runOneService ()
 	local args
 	local base logfile command runtype pidfile
 	local comcnt
+	local serviceargs
 
 	base=${1%%.?*}
+	serviceargs=$2
 
-	pidfile=${PIDFOLDER}/${base}.pid	
+	pidfile=${PIDFOLDER}/${base}.${PIDFILECNT}.pid	
 	logfile=${LOGSFOLDER}/${base}.log
 	runtype="once"
-
 #set files etc
 	while read
 		do
@@ -251,11 +257,12 @@ runOneService ()
 	while read
 		do
 			com=$(echo $REPLY|awk '{print $1}')
-			args="$(echo -e "${REPLY:${#com}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+			args="$(echo -e "${REPLY:${#com}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//') $serviceargs"
 			if [ "X$com" = "XCOMMAND" ];then
 				if [ "X$args" != "X" ] ;then
 					doRunService $base "$args" $logfile $pidfile $runtype < /dev/null
 					sleep 0.1
+					(( PIDFILECNT++ ))
 				fi
 			fi
 		done < <(cat ${SERVICEFILESFOLDER}/${base}.service)
@@ -263,13 +270,16 @@ runOneService ()
 
 runAllServices ()
 {
+	local replyarray
+
 	rm ${PIDFOLDER}/*.pid &>/dev/null||true
 	while read
 		do
-			if [ "X$REPLY" != "X" ];then
-				if [ "X${REPLY##?*.}" = "Xservice" ];then
-					printInfo "launching $REPLY"
-					runOneService ${REPLY%%.?*}
+			replyarray=( $REPLY )
+			if [ "X${replyarray[0]}" != "X" ];then
+				if [ "X${replyarray[0]##?*.}" = "Xservice" ];then
+					printInfo "launching ${replyarray[0]}"
+					runOneService ${replyarray[0]%%.?*} ${replyarray[1]}
 				else
 					printInfo "Evaluating command $REPLY"
 					eval "${REPLY}"
@@ -367,72 +377,81 @@ showStatus ()
 
 main ()
 {
-	if [ "X$1" = "X" ];then
-		echo "need command ..."
-		exit 1
-	else
-		case $1 in
-			"HELP")
-				echo "Service run folder=$SERVICERUNFOLDER"
-				echo "Service Data=$SERVICEDATA"
-				echo "Service File=$SERVICEFILE"
-				echo "Service Files=$SERVICEFILESFOLDER"
-				echo "Service run files=$SERVICERUNFILES"
-				echo "Pid folder=$PIDFOLDER"
-				echo "Logs folder=$LOGSFOLDER"
-				echo "Format:"
-				echo "runservice RUN servicename"
-				echo "runservice RUNALL"
-				echo "runservice KILL servicename"
-				echo "runservice KILLALL"
-				echo "runservice LOGFILE servicename|ME"
-				echo "runservice RMLOG servicename"
-				echo "runservice RMALLLOGS"
-				echo "runservice PID servicename"
-				echo
-				echo "Service file format:"
-				echo "COMMAND command to run"
-				echo "COMMAND second command to run"
-				echo "COMMAND ..."
-				echo "RUNTYPE	once|keepalive|nocontrol|wait, default once"
-				echo "LOGFILE path, default $LOGSFOLDER/service.log"
-				echo "PIDFILE path, default $PIDFOLDER/service.pid"
-				echo "STATUS service"
-				exit 0
-				;;
-			"RUN")
-				runOneService $2
-				;;
-			"RUNALL")
-				runAllServices;
-				;;
-			"KILL")
-				killService $2
-				;;
-			"KILLALL")
-				killAllServices
-				;;
-			"LOGFILE")
-				printLogfile $2
-				;;
-			"RMLOG")
-				removeLog $2
-				;;
-			"RMALLLOGS")
-				removeAllLogs
-				;;
-			"PID")
-				showPid $2;
-				;;
-			"STATUS")
-				showStatus $2
-				;;
-		esac
+	local command=$1
+
+	if [ "X$command" = "X" ];then
+		return
 	fi
+
+	case $command in
+		"HELP")
+			echo "Service run folder=$SERVICERUNFOLDER"
+			echo "Service Data=$SERVICEDATA"
+			echo "Service File=$SERVICEFILE"
+			echo "Service Files=$SERVICEFILESFOLDER"
+			echo "Service run files=$SERVICERUNFILES"
+			echo "Pid folder=$PIDFOLDER"
+			echo "Logs folder=$LOGSFOLDER"
+			echo "Format:"
+			echo "runservice RUN servicename"
+			echo "runservice RUNALL"
+			echo "runservice KILL servicename"
+			echo "runservice KILLALL"
+			echo "runservice LOGFILE servicename|ME"
+			echo "runservice RMLOG servicename"
+			echo "runservice RMALLLOGS"
+			echo "runservice PID servicename"
+			echo
+			echo "Service file format:"
+			echo "COMMAND command to run"
+			echo "COMMAND second command to run"
+			echo "COMMAND ..."
+			echo "RUNTYPE	once|keepalive|nocontrol|wait, default once"
+			echo "LOGFILE path, default $LOGSFOLDER/service.log"
+			echo "PIDFILE path, default $PIDFOLDER/service.pid"
+			echo "STATUS service"
+			exit 0
+			;;
+		"RUN")
+			runOneService $2
+			;;
+		"RUNALL")
+			runAllServices;
+			;;
+		"KILL")
+			killService $2
+			;;
+		"KILLALL")
+			killAllServices
+			;;
+		"LOGFILE")
+			printLogfile $2
+			;;
+		"RMLOG")
+			removeLog $2
+			;;
+		"RMALLLOGS")
+			removeAllLogs
+			;;
+		"PID")
+			showPid $2;
+			;;
+		"STATUS")
+			showStatus $2
+			;;
+	esac
 }
 
 init
 main $@
 
+mkfifo ${SERVICERUNFOLDER}/servicepipe &>/dev/null||true
+echo "Pipe commands to ${SERVICERUNFOLDER}/servicepipe"
 
+while true
+	do
+		data=$(cat ${SERVICERUNFOLDER}/servicepipe)
+		echo $data
+		main $data
+	done
 
