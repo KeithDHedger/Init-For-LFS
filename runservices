@@ -42,11 +42,11 @@ printInfo ()
 			return
 			;;
 		1)
-			echo "$1" >> $MYLOG
+			echo "$1" 2>/dev/null >> $MYLOG
 			;;
 		2)
 			echo "$1"
-			echo "$1" >> $MYLOG
+			echo "$1" 2>/dev/null >> $MYLOG
 			;;
 		esac
 }
@@ -410,10 +410,11 @@ main ()
 			echo "LOGFILE path, default $LOGSFOLDER/service.log"
 			echo "PIDFILE path, default $PIDFOLDER/service.pid"
 			echo "STATUS service"
-			exit 0
+			echo "PIDFILECNT pidcnt, set the auto PIDFILECNT var manually"
+			echo "Pipe commands to ${SERVICERUNFOLDER}/servicepipe"
 			;;
 		"RUN")
-			runOneService $2
+			runOneService $2 $3
 			;;
 		"RUNALL")
 			runAllServices;
@@ -439,19 +440,32 @@ main ()
 		"STATUS")
 			showStatus $2
 			;;
+		"PIDFILECNT")
+			PIDFILECNT=$2
+			;;
 	esac
 }
 
+STARTEDAS=$0
 init
-main $@
+if [ "$(basename "$STARTEDAS")" = "init" ];then
+	main RUNALL
+else
+	main $@
+fi
 
 mkfifo ${SERVICERUNFOLDER}/servicepipe &>/dev/null||true
 echo "Pipe commands to ${SERVICERUNFOLDER}/servicepipe"
 
 while true
 	do
-		data=$(cat ${SERVICERUNFOLDER}/servicepipe)
-		echo $data
-		main $data
+		if [ ! -e ${SERVICERUNFOLDER}/servicepipe ];then
+			echo "No service pipe trying again in 5 seconds ..."
+			sleep 5
+			mkfifo ${SERVICERUNFOLDER}/servicepipe &>/dev/null||true
+		else
+			data=$(cat ${SERVICERUNFOLDER}/servicepipe)
+			echo $data
+			main $data
+		fi
 	done
-
