@@ -32,6 +32,7 @@ init ()
 	MYLOG=${LOGSFOLDER}/runservices.log
 	PIDFILECNT=1
 	IMRUNNING=1
+	FIRSTRUNFLAG=1
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	printInfo "$(date)"
@@ -137,7 +138,6 @@ doRunService ()
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-					#$command &>>$logfile &
 					$command &  2>&1 |tee -a $logfile
 					pid=$!
 #check whether process is still running
@@ -192,7 +192,6 @@ EOF
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-#					$command &>>$logfile &
 					$command & 2>&1 |tee -a $logfile
 					pid=$!
 #check whether process is still running
@@ -221,7 +220,6 @@ EOF
 
 #wait for command to finish
 		if [ $runtype = "wait" ];then
-			#$command &>>$logfile
 			$command 2>&1 |tee -a $logfile
 		fi
 	fi
@@ -491,8 +489,6 @@ else
 	main $@
 fi
 
-firstrunflag=1
-
 while [ $IMRUNNING -eq 1 ]
 	do
 		if [ ! -e ${SERVICERUNFOLDER}/servicepipe ];then
@@ -500,8 +496,8 @@ while [ $IMRUNNING -eq 1 ]
 			sleep 5
 			mkfifo ${SERVICERUNFOLDER}/servicepipe &>/dev/null||true
 		else
-			if [ $firstrunflag -eq 1 ];then
-				firstrunflag=0
+			if [ $FIRSTRUNFLAG -eq 1 ];then
+				FIRSTRUNFLAG=0
 				runOneService "agetty.service" "tty1"
 			fi
 			data=$(cat ${SERVICERUNFOLDER}/servicepipe)
