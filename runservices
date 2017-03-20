@@ -6,14 +6,13 @@ init ()
 {
 	SERVICEBASE=/etc/StartupServices
 	SERVICERUNFOLDER=/run/StartupServices
-	SERVICEDATA=${SERVICEBASE}/servicedata
-	SERVICEFILESFOLDER=${SERVICEBASE}/servicefiles
-	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
-	SERVICEFILE=${SERVICEFILE:-services}
-	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
-	LOGSFOLDER=${SERVICEBASE}/servicelogs
-	SERVICEPIPE=${SERVICERUNFOLDER}/servicepipe
 	VERBOSELEVEL=2
+
+
+
+#	SERVICEBASE=/etc/StartupServices
+#	SERVICERUNFOLDER=/run/StartupServices
+
 
 	if [ -e /etc/service.rc ];then
 		. /etc/service.rc
@@ -22,6 +21,14 @@ init ()
 	if [ -e ~/.config/service.rc ];then
 		. ~/.config/service.rc
 	fi
+
+	SERVICEDATA=${SERVICEBASE}/servicedata
+	SERVICEFILESFOLDER=${SERVICEBASE}/servicefiles
+	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
+	SERVICEFILE=${SERVICEFILE:-services}
+	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
+	LOGSFOLDER=${SERVICEBASE}/servicelogs
+	SERVICEPIPE=${SERVICERUNFOLDER}/servicepipe
 
 	LOGFILE=
 	COMMAND=
@@ -34,6 +41,8 @@ init ()
 	PIDFILECNT=1
 	IMRUNNING=1
 	FIRSTRUNFLAG=1
+
+	TOPTY="&1"
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	printInfo "$(date)"
@@ -49,7 +58,7 @@ printInfo ()
 			echo "$1" 2>/dev/null >> $MYLOG
 			;;
 		2)
-			echo "$1"
+			echo "$1" > $TOPTY
 			echo "$1" 2>/dev/null >> $MYLOG
 			;;
 		esac
@@ -173,8 +182,7 @@ doRunService ()
 #!/bin/bash
 	while [ -e ${base}.${PIDFILECNT}.keepalive ]
 		do
-#			($command) &>>$logfile &
-			($command) & 2>&1 |tee -a $logfile
+			$command & 2>&1 |tee -a $logfile
 			pid=\$!
 			echo \$pid > $pidfile
 			while kill -0 \$pid &>/dev/null
@@ -186,6 +194,9 @@ doRunService ()
 EOF
 			chmod +x $file
 			(cd ${SERVICERUNFILES};./${base}.${PIDFILECNT}.runfile) &
+#			pushd ${SERVICERUNFILES}
+#				./${base}.${PIDFILECNT}.runfile &
+#			popd
 			printInfo "$base launched succsefully"
 		fi
 
@@ -473,6 +484,9 @@ main ()
 			;;
 		"SHUTDOWN")
 			doShutdown
+			;;
+		"ECHOTOPTY")
+			TOPTY=$2
 			;;
 	esac
 }
