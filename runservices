@@ -12,6 +12,7 @@ init ()
 	SERVICEFILE=${SERVICEFILE:-services}
 	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
 	LOGSFOLDER=${SERVICEBASE}/servicelogs
+	SERVICEPIPE=${SERVICERUNFOLDER}/servicepipe
 	VERBOSELEVEL=2
 
 	if [ -e /etc/service.rc ];then
@@ -383,7 +384,7 @@ showStatus ()
 doReboot ()
 {
 	killAllServices
-	rm  ${SERVICERUNFOLDER}/servicepipe
+	rm  ${SERVICEPIPE}
 	/etc/StartupServices/startups/3
 	/etc/StartupServices/poweroff -r now
 	IMRUNNING=0
@@ -392,7 +393,7 @@ doReboot ()
 doShutdown ()
 {
 	killAllServices
-	rm  ${SERVICERUNFOLDER}/servicepipe
+	rm  ${SERVICEPIPE}
 	/etc/StartupServices/startups/3
 	/etc/StartupServices/poweroff -h now
 	IMRUNNING=0
@@ -434,7 +435,7 @@ main ()
 			echo "PIDFILE path, default $PIDFOLDER/service.pid"
 			echo "STATUS service"
 			echo "PIDFILECNT pidcnt, set the auto PIDFILECNT var manually"
-			echo "Pipe commands to ${SERVICERUNFOLDER}/servicepipe"
+			echo "Pipe commands to ${SERVICEPIPE}"
 			;;
 		"RUN")
 			runOneService $2 $3
@@ -491,16 +492,16 @@ fi
 
 while [ $IMRUNNING -eq 1 ]
 	do
-		if [ ! -e ${SERVICERUNFOLDER}/servicepipe ];then
+		if [ ! -e ${SERVICEPIPE} ];then
 			printInfo "No service pipe trying again in 5 seconds ..."
 			sleep 5
-			mkfifo ${SERVICERUNFOLDER}/servicepipe &>/dev/null||true
+			mkfifo ${SERVICEPIPE} &>/dev/null||true
 		else
-			if [ $FIRSTRUNFLAG -eq 1 ];then
+			if [ $FIRSTRUNFLAG -eq 1 ] && [ "$(basename "$STARTEDAS")" = "init" ];then
 				FIRSTRUNFLAG=0
 				runOneService "agetty.service" "tty1"
 			fi
-			data=$(cat ${SERVICERUNFOLDER}/servicepipe)
+			data=$(cat ${SERVICEPIPE})
 			echo $data
 			main $data
 		fi
