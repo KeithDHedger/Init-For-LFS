@@ -4,21 +4,22 @@
 
 init ()
 {
+	SERVICEBASE=/etc/StartupServices
 	SERVICERUNFOLDER=/run/StartupServices
-	SERVICEDATA=/etc/StartupServices/servicedata
-	SERVICEFILESFOLDER=/etc/StartupServices/servicefiles
+	SERVICEDATA=${SERVICEBASE}/servicedata
+	SERVICEFILESFOLDER=${SERVICEBASE}/servicefiles
 	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
 	SERVICEFILE=${SERVICEFILE:-services}
 	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
-	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
+	LOGSFOLDER=${SERVICEBASE}/servicelogs
 	VERBOSELEVEL=2
 
-	if [ -e /etc/StartupServices/servicedata/service.rc ];then
-		. /etc/StartupServices/servicedata/service.rc
+	if [ -e /etc/service.rc ];then
+		. /etc/service.rc
 	fi
 
-	if [ -e ~/StartupServices/servicedata/service.rc ];then
-		. ~/StartupServices/servicedata/service.rc
+	if [ -e ~/.config/service.rc ];then
+		. ~/.config/service.rc
 	fi
 
 	LOGFILE=
@@ -30,6 +31,7 @@ init ()
 	SLEEPTIME=1
 	MYLOG=${LOGSFOLDER}/runservices.log
 	PIDFILECNT=1
+	IMRUNNING=1
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	printInfo "$(date)"
@@ -135,7 +137,8 @@ doRunService ()
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-					$command &>>$logfile &
+					#$command &>>$logfile &
+					$command &  2>&1 |tee -a $logfile
 					pid=$!
 #check whether process is still running
 					count=$(ps -A| grep $pid |wc -l)
@@ -169,7 +172,8 @@ doRunService ()
 #!/bin/bash
 	while [ -e ${base}.${PIDFILECNT}.keepalive ]
 		do
-			($command) &>>$logfile &
+#			($command) &>>$logfile &
+			($command) & 2>&1 |tee -a $logfile
 			pid=\$!
 			echo \$pid > $pidfile
 			while kill -0 \$pid &>/dev/null
@@ -188,7 +192,8 @@ EOF
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-					$command &>>$logfile &
+#					$command &>>$logfile &
+					$command & 2>&1 |tee -a $logfile
 					pid=$!
 #check whether process is still running
 					count=$(ps -A| grep $pid |wc -l)
@@ -216,7 +221,8 @@ EOF
 
 #wait for command to finish
 		if [ $runtype = "wait" ];then
-			$command &>>$logfile
+			#$command &>>$logfile
+			$command 2>&1 |tee -a $logfile
 		fi
 	fi
 }
@@ -262,10 +268,10 @@ runOneService ()
 				if [ "X$args" != "X" ] ;then
 					doRunService $base "$args" $logfile $pidfile $runtype < /dev/null
 					sleep 0.1
-					(( PIDFILECNT++ ))
 				fi
 			fi
 		done < <(cat ${SERVICEFILESFOLDER}/${base}.service)
+	(( PIDFILECNT++ ))
 }
 
 runAllServices ()
@@ -290,14 +296,16 @@ runAllServices ()
 
 killService ()
 {
-	if [ -e  ${PIDFOLDER}/${1}.pid ];then
-		rm ${SERVICERUNFILES}/${1}.keepalive &>/dev/null||true
-		kill -9 $(cat ${PIDFOLDER}/$1.pid)
+	local serv="$1"
+
+	if [ -e  ${PIDFOLDER}/${serv}.pid ];then
+		rm ${SERVICERUNFILES}/${serv}.keepalive &>/dev/null||true
+		kill -9 $(cat ${PIDFOLDER}/${serv}.pid)
 		rm  ${PIDFOLDER}/$1.pid &>/dev/null||true
-		rm ${SERVICERUNFILES}/${1}.runfile &>/dev/null||true
-		printInfo "Killed $1"
+		rm ${SERVICERUNFILES}/${serv}.runfile &>/dev/null||true
+		printInfo "Killed $serv"
 	else
-		printInfo "$1 not under my control ..."
+		printInfo "$serv not under my control ..."
 	fi
 }
 
@@ -305,10 +313,9 @@ killAllServices ()
 {
 	while read
 		do
-			if [ "X${REPLY##?*.}" = "Xservice" ];then
-				killService ${REPLY%%.?*}
-			fi
-		done < <(tac ${SERVICEDATA}/services)
+			printInfo "Killing ${REPLY%.pid} ..."
+			killService "$(basename "$REPLY" ".pid" )"
+		done < <(find "${PIDFOLDER}" -maxdepth 1 -iname "*.pid")
 }	
 
 printLogfile ()
@@ -375,6 +382,24 @@ showStatus ()
 	fi
 }
 
+doReboot ()
+{
+	killAllServices
+	rm  ${SERVICERUNFOLDER}/servicepipe
+	/etc/StartupServices/startups/3
+	/etc/StartupServices/poweroff -r now
+	IMRUNNING=0
+}
+
+doShutdown ()
+{
+	killAllServices
+	rm  ${SERVICERUNFOLDER}/servicepipe
+	/etc/StartupServices/startups/3
+	/etc/StartupServices/poweroff -h now
+	IMRUNNING=0
+}
+
 main ()
 {
 	local command=$1
@@ -424,6 +449,7 @@ main ()
 			;;
 		"KILLALL")
 			killAllServices
+			printInfo "Done killall services"
 			;;
 		"LOGFILE")
 			printLogfile $2
@@ -443,27 +469,41 @@ main ()
 		"PIDFILECNT")
 			PIDFILECNT=$2
 			;;
+		"REBOOT")
+			doReboot
+			;;
+		"SHUTDOWN")
+			doShutdown
+			;;
 	esac
 }
 
 STARTEDAS=$0
 init
 if [ "$(basename "$STARTEDAS")" = "init" ];then
-	main RUNALL
+	if [ "X$(ps --no-headers 1)" = "X" ];then
+		main RUNALL
+	else
+		echo "Can only run as init once, exiting ..."
+		exit 1
+	fi
 else
 	main $@
 fi
 
-mkfifo ${SERVICERUNFOLDER}/servicepipe &>/dev/null||true
-echo "Pipe commands to ${SERVICERUNFOLDER}/servicepipe"
+firstrunflag=1
 
-while true
+while [ $IMRUNNING -eq 1 ]
 	do
 		if [ ! -e ${SERVICERUNFOLDER}/servicepipe ];then
-			echo "No service pipe trying again in 5 seconds ..."
+			printInfo "No service pipe trying again in 5 seconds ..."
 			sleep 5
 			mkfifo ${SERVICERUNFOLDER}/servicepipe &>/dev/null||true
 		else
+			if [ $firstrunflag -eq 1 ];then
+				firstrunflag=0
+				runOneService "agetty.service" "tty1"
+			fi
 			data=$(cat ${SERVICERUNFOLDER}/servicepipe)
 			echo $data
 			main $data
