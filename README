@@ -8,4 +8,87 @@ Copy poweroff executable to /etc/StartupServices/poweroff
 Copy runservices to /etc/StartupServices/runservices
 Link /sbin/init to /etc/StartupServices/runservices
 Link /sbin/shutdown and /sbin/reboot to /etc/StartupServices/runservices
+Link /sbin/servicermt to /etc/StartupServices/runservices
+
+All files default to being in /etc/StartupServices, you can change this by setting /etc/service.rc, when running as a normal user the rc file is  ~/.config/service.rc
+
+Example:
+SERVICEBASE=/home/keithhedger/StartupServices
+SERVICERUNFOLDER=${SERVICEBASE}
+
+You can run either as init or like I do as startup manager for my desktop I just use this line:
+/home/keithhedger/StartupServices/runservices RUNALL &
+in my xinitrc file
+With this config file ~/.config/service.rc
+SERVICEBASE=/home/keithhedger/StartupServices
+SERVICERUNFOLDER=${SERVICEBASE}
+
+Basic use:
+./runservices HELP
+
+Tue 11 Apr 16:07:26 BST 2017
+Service run folder=/home/keithhedger/StartupServices
+Service Data=/home/keithhedger/StartupServices/servicedata
+Service File=services
+Service Files=/home/keithhedger/StartupServices/servicefiles
+Service run files=/home/keithhedger/StartupServices/servicerunfiles
+Pid folder=/home/keithhedger/StartupServices/servicepids
+Logs folder=/home/keithhedger/StartupServices/servicelogs
+Format:
+runservice RUN servicename
+runservice RUNALL
+runservice KILL servicename
+runservice KILLALL
+runservice LOGFILE servicename|ME
+runservice RMLOG servicename
+runservice RMALLLOGS
+runservice PID servicename
+runservice SHOWPIDS
+
+Service file format:
+COMMAND command to run
+COMMAND second command to run
+COMMAND ...
+RUNTYPE	once|keepalive|nocontrol|wait, default once
+LOGFILE path, default /home/keithhedger/StartupServices/servicelogs/service.log
+PIDFILE path, default /home/keithhedger/StartupServices/servicepids/service.pid
+STATUS service
+PIDFILECNT pidcnt, set the auto PIDFILECNT var manually
+Pipe commands to /home/keithhedger/StartupServices/servicepipe
+
+Service files can run more than one command and they can be set to respawn if they exit eg the aggety.service:
+
+COMMAND setsid /sbin/agetty --noclear
+RUNTYPE	keepalive
+
+RUNALL will run all service files ( *.service )
+
+The main sercvice script is /etc/StartupServices/servicedata/services, by default though this can be changed via the config file, and can contain a mix of service files to run and normal commands eg:
+
+/etc/StartupServices/startups/1
+sleep 2
+
+mkdir -vp "/run/StartupServices/servicerunfiles" "/run/StartupServices/servicelogs" "/run/StartupServices/servicepids"
+mkfifo "/run/StartupServices/servicepipe"
+
+/etc/StartupServices/startups/2
+
+agetty.service tty2
+agetty.service tty3
+agetty.service tty4
+
+Output will usually go to the console tty where the app has been starte from but you can redirect the output to another tty with the ECHOTOPTY command, eg set output to from init current pty:
+servicermt ECHOTOPTY $(tty)
+servicermt LOGFILE ME
+
+...
+
+The basic LFS syv scripts are used to do all the system start up stuff, with a few tweaks.
+
+More documentaion to come!
+A small boot movie is in the git repo ( "LFSDev.webm" ) which shows a basic lfs system booting using this init system.
+
+
+
+
 
