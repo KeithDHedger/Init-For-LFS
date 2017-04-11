@@ -1,1 +1,11 @@
 How To
+
+!!!MAKE BACKUPS OF ALL MOVED OVERWRITTEN FILES OR ELSE!!!
+
+Copy files/folders in etc to /etc
+Build poweroff program ( See poweroff.cpp file )
+Copy poweroff executable to /etc/StartupServices/poweroff
+Copy runservices to /etc/StartupServices/runservices
+Link /sbin/init to /etc/StartupServices/runservices
+Link /sbin/shutdown and /sbin/reboot to /etc/StartupServices/runservices
+
