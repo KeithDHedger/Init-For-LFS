@@ -1,0 +1,44 @@
+#!/bin/sh
+
+#©keithhedger Sun 11 May 14:13:40 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+prettyMsgStart "Mounting virtual file systems:"
+prettyMsgResult "INFO"
+
+MOUNTRESULT="OK"
+
+if ! mountpoint /run >/dev/null; then
+	MOUNTRESULT="OK"
+	prettyMsgStart "Mounting virtual file system: /run"
+	mount /run &>/dev/null|| MOUNTRESULT="FAIL"
+	prettyMsgResult $MOUNTRESULT
+fi
+
+mkdir -p /run/var /run/lock /run/shm
+chmod 1777 /run/shm
+
+if ! mountpoint /proc >/dev/null; then
+	MOUNTRESULT="OK"
+	prettyMsgStart "Mounting virtual file system: /proc"
+	mount -o nosuid,noexec,nodev /proc &>/dev/null|| MOUNTRESULT="FAIL"
+	prettyMsgResult $MOUNTRESULT
+fi
+
+if ! mountpoint /sys >/dev/null; then
+	MOUNTRESULT="OK"
+	prettyMsgStart "Mounting virtual file system: /sys" 
+	mount -o nosuid,noexec,nodev /sys &>/dev/null|| MOUNTRESULT="FAIL"
+	prettyMsgResult $MOUNTRESULT
+fi
+
+if ! mountpoint /dev >/dev/null; then
+	MOUNTRESULT="OK"
+	prettyMsgStart "Mounting virtual file system: /dev" 
+	mount -o mode=0755,nosuid /dev &>/dev/null|| MOUNTRESULT="FAIL"
+	prettyMsgResult $MOUNTRESULT
+fi
+
+cp -a /lib/udev/devices/* /dev
+ln -sfn /run/shm /dev/shm

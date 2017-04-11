@@ -1,0 +1,13 @@
+
+
+/etc/StartupServices/startups/1
+sleep 2
+
+mkdir -vp "/run/StartupServices/servicerunfiles" "/run/StartupServices/servicelogs" "/run/StartupServices/servicepids"
+mkfifo "/run/StartupServices/servicepipe"
+
+/etc/StartupServices/startups/2
+
+agetty.service tty2
+agetty.service tty3
+agetty.service tty4

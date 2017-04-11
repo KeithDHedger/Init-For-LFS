@@ -1,0 +1,21 @@
+#!/bin/sh
+
+#©keithhedger Mon 12 May 12:47:48 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+case $1 in
+	"start")
+		MOUNTRESULT="OK"
+		prettyMsgStart "Activating all swap files/partitions"
+		swapon -a &>/dev/null|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	"stop")
+ 		MOUNTRESULT="OK"
+		prettyMsgStart "Deactivating all swap files/partitions"
+		swapoff -a|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+esac

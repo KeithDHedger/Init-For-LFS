@@ -1,0 +1,61 @@
+#!/bin/sh
+########################################################################
+# Begin dbus
+#
+# Description : Start dbus daemon
+#
+# Author      : Bruce Dubbs - bdubbs@linuxfromscratch.org
+#
+# Version     : LFS 7.0
+#
+########################################################################
+
+### BEGIN INIT INFO
+# Provides:            dbus
+# Required-Start:      cleanfs
+# Should-Start:        $remote_fs
+# Required-Stop:       sendsignals
+# Should-Stop:
+# Default-Start:       2 3 4 5
+# Default-Stop:        0 1 6
+# Short-Description:   Starts message bus.
+# Description:         Starts message bus.
+# X-LFS-Provided-By:   LFS
+### END INIT INFO
+
+. /etc/init.d/init-functions
+
+pidfile=/run/dbus/pid
+socket=/run/dbus/system_bus_socket
+
+case "$1" in
+	start)
+		MOUNTRESULT="OK"
+		prettyMsgStart "Starting the D-Bus Messagebus Daemon"
+		mkdir -p /run/dbus
+		/usr/bin/dbus-uuidgen --ensure
+		/usr/bin/dbus-daemon --system|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	stop)
+		MOUNTRESULT="OK"
+		prettyMsgStart "Stopping the D-Bus Messagebus Daemon"
+		/bin/killall -q /usr/bin/dbus-daemon|| MOUNTRESULT="FAIL"
+		rm -f $socket $pidfile
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	restart)
+		$0 stop
+		sleep 1
+		$0 start
+		;;
+
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+		;;
+esac
+
+# End /etc/init.d/dbus

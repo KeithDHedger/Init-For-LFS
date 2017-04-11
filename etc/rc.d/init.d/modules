@@ -1,0 +1,58 @@
+#!/bin/sh
+
+#©keithhedger Sun 11 May 14:01:53 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+[ -e /proc/ksyms -o -e /proc/modules ] || exit 0
+
+MOUNTRESULT="OK"
+prettyMsgStart "Checking for module support"
+[ -e /proc/ksyms -o -e /proc/modules ] || MOUNTRESULT="FAIL"
+prettyMsgResult $MOUNTRESULT
+
+if [ $MOUNTRESULT = "FAIL" ];then
+	exit 0
+fi
+
+MOUNTRESULT="OK"
+prettyMsgStart "Checking for modules file"
+[ -r /etc/sysconfig/modules ] || MOUNTRESULT="WARN"
+prettyMsgResult $MOUNTRESULT
+if [ $MOUNTRESULT = "WARN" ];then
+	exit 0
+fi
+
+MOUNTRESULT="OK"
+prettyMsgStart "Checking for valid entries"
+egrep -qv '^($|#)' /etc/sysconfig/modules || MOUNTRESULT="WARN"
+prettyMsgResult $MOUNTRESULT
+if [ $MOUNTRESULT = "WARN" ];then
+	exit 0
+fi
+
+prettyMsgStart "Loading modules"
+prettyMsgResult "INFO"
+
+	while read module args
+		do
+			MOUNTRESULT="OK"
+# Ignore comments and blank lines.
+			case "$module" in
+				""|"#"*) continue ;;
+			esac
+
+# Attempt to load the module, passing any arguments provided.
+			prettyMsgStart "Loading ${module}"
+			modprobe ${module} ${args} >/dev/null
+
+# Print the module name if successful, otherwise take note.
+			if [ $? -eq 0 ];then
+				prettyMsgResult "OK"
+			else
+ 				prettyMsgResult "WARN"
+			fi
+		done < /etc/sysconfig/modules
+
+
+

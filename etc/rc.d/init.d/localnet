@@ -1,0 +1,29 @@
+#!/bin/sh
+
+#©keithhedger Mon 12 May 12:47:48 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+[ -r /etc/sysconfig/network ] && . /etc/sysconfig/network
+
+case "${1}" in
+	"start")
+		MOUNTRESULT="OK"
+		prettyMsgStart "Bringing up the loopback interface"
+		ip addr add 127.0.0.1/8 label lo dev lo|| MOUNTRESULT="FAIL"
+		ip link set lo up|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+
+		MOUNTRESULT="OK"
+		prettyMsgStart "Setting hostname to ${HOSTNAME}"
+		hostname ${HOSTNAME}|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	"stop")
+		MOUNTRESULT="OK"
+		prettyMsgStart "Bringing down the loopback interface"
+		ip link set lo down|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+esac

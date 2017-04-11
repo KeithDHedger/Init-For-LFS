@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#©keithhedger Mon 12 May 12:47:48 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+MOUNTRESULT="OK"
+prettyMsgStart "Starting system log daemon"
+parms=${SYSKLOGD_PARMS-'-m 0'}
+/sbin/syslogd $parms|| MOUNTRESULT="FAIL"
+prettyMsgResult $MOUNTRESULT
+
+
+MOUNTRESULT="OK"
+prettyMsgStart "Starting kernel log daemon"
+/sbin/klogd|| MOUNTRESULT="FAIL"
+prettyMsgResult $MOUNTRESULT
+

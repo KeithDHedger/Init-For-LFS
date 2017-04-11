@@ -1,0 +1,40 @@
+#!/bin/sh
+
+#©keithhedger Mon 12 May 12:54:23 BST 2014 kdhedger68713@gmail.com
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+. /etc/init.d/init-functions
+
+case $1 in
+	"start")
+		MOUNTRESULT="OK"
+		prettyMsgStart "Remounting root file system in read-write mode"
+		mount -o remount,rw / >/dev/null|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+
+		rm -f /fastboot /forcefsck
+
+		MOUNTRESULT="OK"
+		prettyMsgStart "Mounting remaining file systems"
+		mount -a -O no_netdev >/dev/null|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	"stop")
+		MOUNTRESULT="OK"
+		prettyMsgStart "Unmounting all other currently mounted file systems"
+		umount -f -a -d -r -t notmpfs,nosysfs,nodevtmpfs,noproc,nodevpts >/dev/null|| MOUNTRESULT="FAIL"
+		umount -f /run/shm 2>&1 >/dev/null
+		umount -f /run 2>&1 >/dev/null
+		umount -f -a -r >/dev/null|| MOUNTRESULT="FAIL"
+		mount -n -o remount,ro /|| MOUNTRESULT="FAIL"
+		prettyMsgResult "$MOUNTRESULT"
+		if [ X"$MOUNTRESULT" != "XOK" ];then
+			exit 1
+		else
+			exit 0
+		fi
+		;;
+esac

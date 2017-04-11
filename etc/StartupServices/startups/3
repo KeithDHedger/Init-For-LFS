@@ -1,0 +1,72 @@
+#!/bin/bash
+exec 2>&1
+
+. /etc/init.d/init-functions
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+if [ -f /tmp/slowdown ];then
+	SLEEP="/bin/sleep 4"
+else
+	SLEEP=""
+fi
+
+if [ -f /tmp/waitdown ];then
+	WAITDOWN="read"
+else
+	WAITDOWN=""
+fi
+
+#wait for x to shutdown 
+XPID=$(pidof /usr/bin/X)
+waitpid $XPID
+
+for i in /etc/rc.d/rc3.d/*
+  do
+	  if [ -x "$i" ];then
+		  "$i" stop
+		  $SLEEP
+	  fi
+  done
+
+# Save the alsamixer volumes
+if [ -x /usr/sbin/alsactl ]; then
+    /usr/sbin/alsactl store &>/dev/null
+fi
+
+# Sync the hardware clock
+/etc/rc.d/rc1.d/08-setclock "stop"
+
+# Save the random number generator seed
+#/etc/runit/init.d/22-random "stop"
+
+# Turn swapping off
+/etc/rc.d/rc1.d/06-swap "stop"
+
+# Bring down the localnet
+/etc/rc.d/rc1.d/20-localnet "stop"
+
+prettyMsgStart "Syncing disks"
+/bin/sync
+# sleep 3 fixes problems with some hard drives that don't
+# otherwise finish syncing before reboot or poweroff
+/bin/sleep 3
+prettyMsgResult "OK"
+
+#kill udev
+udevadm control --exit
+killall -q udevd
+
+#kill syslog
+killall -q syslogd
+
+# Unmount all non-virtual partitions
+/etc/rc.d/rc1.d/12-mountfs "stop"
+
+if [ "X${SLEEP}" != "X" ];then
+	echo "Shutting down/Rebooting now ..."
+	sleep 20
+fi
+
+${WAITDOWN}

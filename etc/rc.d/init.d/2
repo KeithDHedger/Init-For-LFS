@@ -1,0 +1,10 @@
+#!/bin/sh
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+for i in /etc/rc.d/rc2.d/*
+  do
+	  if [ -x "$i" ];then
+		  "$i" start
+	  fi
+  done
+

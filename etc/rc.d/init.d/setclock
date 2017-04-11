@@ -1,0 +1,33 @@
+#!/bin/sh
+
+#©keithhedger Mon 12 May 12:51:33 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+[ -r /etc/sysconfig/clock ] && . /etc/sysconfig/clock
+
+case "${UTC}" in
+	yes|true|1)
+		CLOCKPARAMS="${CLOCKPARAMS} --utc"
+		;;
+
+	no|false|0)
+		CLOCKPARAMS="${CLOCKPARAMS} --localtime"
+		;;
+esac
+
+case $1 in
+	"start")
+		MOUNTRESULT="OK"
+		prettyMsgStart "Setting hardware clock"
+		/sbin/hwclock --hctosys ${CLOCKPARAMS} &>/dev/null|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	"stop")
+		MOUNTRESULT="OK"
+		prettyMsgStart "Setting hardware clock"
+		hwclock --systohc --utc &>/dev/null|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+esac

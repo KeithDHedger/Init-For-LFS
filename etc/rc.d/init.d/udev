@@ -1,0 +1,45 @@
+#!/bin/sh
+
+#©keithhedger Sun 11 May 15:26:53 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+prettyMsgStart "Populating /dev with device nodes "
+prettyMsgResult "INFO"
+
+if ! grep -q '[[:space:]]sysfs' /proc/mounts; then
+	prettyMsgResult "FAIL"
+	echo "FAILURE:\n\nUnable to create devices without a SysFS filesystem\n\n"
+	echo "After you press Enter, this system will be halted and powered off.\n\n"
+	echo "Press Enter to continue"
+	read
+	/sbin/shutdown
+else
+	prettyMsgResult "INFO"
+fi
+
+# Udev handles uevents itself, so we don't need to have
+# the kernel call out to any binary in response to them
+echo > /proc/sys/kernel/hotplug
+
+# Start the udev daemon to continually watch for, and act on,
+# uevents
+/sbin/udevd --daemon
+
+# Now traverse /sys in order to "coldplug" devices that have
+# already been discovered
+/sbin/udevadm trigger --action=add    --type=subsystems
+/sbin/udevadm trigger --action=add    --type=devices
+/sbin/udevadm trigger --action=change --type=devices
+
+# Now wait for udevd to process the uevents we triggered
+/sbin/udevadm settle
+
+# If any LVM based partitions are on the system, ensure they
+# are activated so they can be used.
+if [ -x /sbin/vgchange ]; then /sbin/vgchange -a y >/dev/null; fi 
+
+
+
+
+

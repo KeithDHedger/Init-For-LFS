@@ -1,0 +1,78 @@
+#!/bin/sh
+########################################################################
+# Begin /etc/init.d/mysql
+#
+# Description : Start MysSQL Server
+#
+# Author      : Bruce Dubbs - bdubbs@linuxfromscratch.org
+#
+# Version     : LFS 7.0
+#
+########################################################################
+
+### BEGIN INIT INFO
+# Provides:            mysql
+# Required-Start:      $network
+# Should-Start:        $remote_fs
+# Required-Stop:       $network
+# Should-Stop:         $remote_fs
+# Default-Start:       3 4 5
+# Default-Stop:        0 1 2 6
+# Short-Description:   Starts MySQL server.
+# Description:         Starts MySQL server.
+# X-LFS-Provided-By:   BLFS / LFS 7.0
+### END INIT INFO
+
+. /etc/init.d/init-functions
+
+PIDFILE=/srv/mysql/`/bin/hostname`.pid
+
+case "$1" in
+	start)
+		MOUNTRESULT="OK"
+		prettyMsgStart "Starting MySQL daemon"
+		mkdir -p /run/mysqld
+		chown mysql.mysql /run/mysqld
+
+		if [ -f "$PIDFILE" ]; then
+			if /bin/ps --pid `cat $PIDFILE` | grep mysqld >/dev/null; then
+				prettyMsgStart "MySQL daemon already running"
+				MOUNTRESULT="WARN"
+				exit 0
+			else
+				rm -f "$PIDFILE"
+				if [ -f "$PIDFILE" ]; then
+					MOUNTRESULT="FAIL"
+					exit 1
+				fi
+			fi
+		fi
+
+		/usr/bin/mysqld_safe --user=mysql 2>&1 >/dev/null &
+		res=$?
+		if [ $res -ne 0 ];then
+			MOUNTRESULT="FAIL"
+		fi
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	stop)
+		MOUNTRESULT="OK"
+		prettyMsgStart "Stopping MySQL daemon"
+ 		/bin/killall -q /usr/sbin/mysqld|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	restart)
+		$0 stop
+		sleep 1
+		$0 start
+		;;
+
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+		;;
+esac
+
+# End /etc/init.d/mysql

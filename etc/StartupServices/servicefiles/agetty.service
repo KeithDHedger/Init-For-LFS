@@ -1,0 +1,4 @@
+
+COMMAND setsid /sbin/agetty --noclear
+RUNTYPE	keepalive
+

@@ -1,0 +1,89 @@
+#!/bin/bash -e
+
+#©keithhedger Sun 11 May 14:04:47 BST 2014 kdhedger68713@gmail.com
+
+if [ -z "${COLUMNS}" ]; then
+   COLUMNS=$(stty size)
+   COLUMNS=${COLUMNS##* }
+fi
+
+# When using remote connections, such as a serial port, stty size returns 0
+if [ "${COLUMNS}" = "0" ]; then
+   COLUMNS=80
+fi
+
+## Measurements for positioning result messages
+COL=$((${COLUMNS} - 8))
+WCOL=$((${COL} - 2))
+
+## Set Cursor Position Commands, used via echo
+SET_COL="\\033[${COL}G"      # at the $COL char
+SET_WCOL="\\033[${WCOL}G"    # at the $WCOL char
+CURS_UP="\\033[1A\\033[0G"   # Up one line, at the 0'th char
+CURS_ZERO="\\033[0G"
+
+## Set color commands, used via echo
+# Please consult `man console_codes for more information
+# under the "ECMA-48 Set Graphics Rendition" section
+#
+# Warning: when switching from a 8bit to a 9bit font,
+# the linux console will reinterpret the bold (1;) to
+# the top 256 glyphs of the 9bit font.  This does
+# not affect framebuffer consoles
+
+NORMAL="\\033[0;39m"         # Standard console grey
+SUCCESS="\\033[1;32m"        # Success is green
+WARNING="\\033[1;33m"        # Warnings are yellow
+FAILURE="\\033[1;31m"        # Failures are red
+INFO="\\033[1;36m"           # Information is light cyan
+BRACKET="\\033[1;34m"        # Brackets are blue
+
+# Use a colored prefix
+BMPREFIX="     "
+SUCCESS_PREFIX="${SUCCESS}  *  ${NORMAL}"
+FAILURE_PREFIX="${FAILURE}*****${NORMAL}"
+WARNING_PREFIX="${WARNING} *** ${NORMAL}"
+INFO_PREFIX="${INFO} *** ${NORMAL}"
+
+SUCCESS_SUFFIX="${BRACKET}[${SUCCESS}  OK  ${BRACKET}]${NORMAL}"
+FAILURE_SUFFIX="${BRACKET}[${FAILURE} FAIL ${BRACKET}]${NORMAL}"
+WARNING_SUFFIX="${BRACKET}[${WARNING} WARN ${BRACKET}]${NORMAL}"
+INFO_SUFFIX="${BRACKET}[${INFO} INFO ${BRACKET}]${NORMAL}"
+
+prettyInfo ()
+{
+	/bin/echo -n -e "${BMPREFIX}$1"
+	/bin/echo -e "${CURS_ZERO}${INFO_PREFIX}${SET_COL}${INFO_SUFFIX}"
+}
+
+prettyMsgStart ()
+{
+	/bin/echo -en "${CURS_ZERO}${@} ... "
+}
+
+prettyMsgResult ()
+{
+	if [ $1 = "FAIL" ];then
+		/bin/echo -e "${SET_COL}${FAILURE_SUFFIX}"
+	fi
+
+	if [ $1 = "OK" ];then
+		/bin/echo -e "${SET_COL}${SUCCESS_SUFFIX}"
+	fi
+
+	if [ $1 = "INFO" ];then
+		/bin/echo -e "${SET_COL}${INFO_SUFFIX}"
+	fi
+
+	if [ $1 = "WARN" ];then
+		/bin/echo -e "${SET_COL}${WARNING_SUFFIX}"
+	fi
+
+}
+
+isTrue () 
+{
+   [ "$1" = "1" ] || [ "$1" = "yes" ] || [ "$1" = "true" ]
+}
+
+

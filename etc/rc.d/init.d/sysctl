@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#©keithhedger Mon 12 May 12:47:48 BST 2014 kdhedger68713@gmail.com
+
+. /etc/init.d/init-functions
+
+MOUNTRESULT="OK"
+if [ -f "/etc/sysctl.conf" ]; then
+	prettyMsgStart "Setting kernel runtime parameters"
+	sysctl -q -p|| MOUNTRESULT="FAIL"
+	prettyMsgResult $MOUNTRESULT
+fi
+
+
+

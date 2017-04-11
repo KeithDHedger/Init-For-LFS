@@ -1,0 +1,66 @@
+#!/bin/sh
+#######################################################################
+# Begin /etc/init.d/gpm
+#
+# Description : Start GPM Console Mouse Service
+#
+# Author      : DJ Lucas - dj@linuxfromscratch.org
+#
+# Version     : LFS 7.0
+#
+########################################################################
+
+### BEGIN INIT INFO
+# Provides:            gpm
+# Required-Start:      $network $local_fs
+# Should-Start:
+# Required-Stop:       $local_fs $network
+# Should-Stop:
+# Default-Start:       3 4 5
+# Default-Stop:        0 1 2 6
+# Short-Description:   Starts and stops the GPM console mouse service.
+# Description:         Starts and stops the GPM console mouse service.
+# X-LFS-Provided-By:   BLFS / LFS 7.0
+### END INIT INFO
+
+. /etc/init.d/init-functions
+
+pidfile="/run/gpm.pid"
+
+[ -f /etc/sysconfig/mouse ] && source /etc/sysconfig/mouse
+
+case "${1}" in
+	start)
+		MOUNTRESULT="OK"
+		prettyMsgStart "Starting GPM console mouse service"
+		if [ "${MDEVICE}" = "" -o "${PROTOCOL}" = "" ]; then
+			prettyMsgResult "FAIL"
+			exit 2
+		fi
+		/usr/sbin/gpm -m "${MDEVICE}" -t "${PROTOCOL}" ${GPMOPTS}|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	stop)
+		MOUNTRESULT="OK"
+		prettyMsgStart "Stopping GPM console mouse service"
+ 		/bin/killall -q /usr/sbin/gpm|| MOUNTRESULT="FAIL"
+		prettyMsgResult $MOUNTRESULT
+		;;
+
+	restart)
+		${0} stop
+		sleep 1
+		${0} start
+		;;
+
+
+	*)
+		echo "Usage: ${0} {start|stop|restart}"
+		exit 1
+		;;
+esac
+
+exit 0
+
+# End /etc/init.d/gpm
