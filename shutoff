@@ -1,7 +1,0 @@
-#!/bin/bash
-
-if [ "$1" = "-r" ];then
-	echo "REBOOT" > /run/StartupServices/servicepipe
-else
-	echo "SHUTDOWN" > /run/StartupServices/servicepipe
-fi
