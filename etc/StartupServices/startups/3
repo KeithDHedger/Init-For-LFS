@@ -38,9 +38,6 @@ fi
 # Sync the hardware clock
 /etc/rc.d/rc1.d/08-setclock "stop"
 
-# Save the random number generator seed
-#/etc/runit/init.d/22-random "stop"
-
 # Turn swapping off
 /etc/rc.d/rc1.d/06-swap "stop"
 
