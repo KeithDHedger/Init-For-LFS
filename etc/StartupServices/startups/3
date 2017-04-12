@@ -36,13 +36,13 @@ if [ -x /usr/sbin/alsactl ]; then
 fi
 
 # Sync the hardware clock
-/etc/rc.d/rc1.d/08-setclock "stop"
+/etc/rc.d/init.d/setclock "stop"
 
 # Turn swapping off
-/etc/rc.d/rc1.d/06-swap "stop"
+/etc/rc.d/init.d/swap "stop"
 
 # Bring down the localnet
-/etc/rc.d/rc1.d/20-localnet "stop"
+/etc/rc.d/init.d/localnet "stop"
 
 prettyMsgStart "Syncing disks"
 /bin/sync
@@ -59,7 +59,7 @@ killall -q udevd
 killall -q syslogd
 
 # Unmount all non-virtual partitions
-/etc/rc.d/rc1.d/12-mountfs "stop"
+/etc/rc.d/init.d/mountfs "stop"
 
 if [ "X${SLEEP}" != "X" ];then
 	echo "Shutting down/Rebooting now ..."
