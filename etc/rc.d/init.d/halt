@@ -7,7 +7,7 @@ export PATH
 
 case $1 in
 	stop)
-		echo "After you press Enter, this system will be owered off"
+		echo "After you press Enter, this system will be powered off"
 		waitForUser
 		/etc/StartupServices/poweroff -r now
 		;;
