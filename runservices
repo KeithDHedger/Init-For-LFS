@@ -2,11 +2,34 @@
 
 #©keithhedger Sat 4 Mar 15:35:56 GMT 2017 kdhedger68713@gmail.com
 
+
+mountTmpFS ()
+{
+	mount -t tmpfs -o size=512m tmpfs ${SERVICERUNFOLDER}
+}
+
+makeMessagePipe ()
+{
+	if [ -w ${SERVICERUNFOLDER} ];then
+		while [ ! -e ${SERVICEPIPE} ]
+			do
+				printInfo "No service pipe trying again in 5 seconds ..."
+				sleep 5
+				mkfifo ${SERVICEPIPE} &>/dev/null||true
+			done
+	else
+		mountTmpFS
+		mkdir -vp ${SERVICERUNFOLDER}
+		makeMessagePipe
+	fi
+}
+
 init ()
 {
 	SERVICEBASE=/etc/StartupServices
 	SERVICERUNFOLDER=/run/StartupServices
 	VERBOSELEVEL=2
+	export COLUMNS=80
 
 	if [ -e /etc/service.rc ];then
 		. /etc/service.rc
@@ -512,57 +535,41 @@ case $(basename $STARTEDAS) in
 		fi
 		;;
 	"servicermt")
-		while [ ! -e ${SERVICEPIPE} ]
-			do
-				printInfo "No service pipe trying again in 5 seconds ..."
-				sleep 5
-				mkfifo ${SERVICEPIPE} &>/dev/null||true
-			done
+		makeMessagePipe
 		echo "$@" > ${SERVICEPIPE}
 		exit 0
 		;;
 	"shutdown")
-		while [ ! -e ${SERVICEPIPE} ]
-			do
-				printInfo "No service pipe trying again in 5 seconds ..."
-				sleep 5
-				mkfifo ${SERVICEPIPE} &>/dev/null||true
-			done
+		makeMessagePipe
 		echo "SHUTDOWN" > ${SERVICEPIPE}
 		exit 0
 		;;
 	"reboot")
-		while [ ! -e ${SERVICEPIPE} ]
-			do
-				printInfo "No service pipe trying again in 5 seconds ..."
-				sleep 5
-				mkfifo ${SERVICEPIPE} &>/dev/null||true
-			done
-		echo "REBOOT" > ${SERVICEPIPE}
+		if [ "X$1" = "X-f" ];then
+			/etc/StartupServices/poweroff -r
+		else
+			makeMessagePipe
+			echo "REBOOT" > ${SERVICEPIPE}
+		fi
 		exit 0
 		;;
 	*)
-		mkfifo ${SERVICEPIPE} &>/dev/null||true
+		makeMessagePipe
 		main $@
 		;;
 esac
 
 while [ $IMRUNNING -eq 1 ]
 	do
-		if [ ! -e ${SERVICEPIPE} ];then
-			printInfo "No service pipe trying again in 5 seconds ..."
-			sleep 5
-			mkfifo ${SERVICEPIPE} &>/dev/null||true
-		else
-			if [ $FIRSTRUNFLAG -eq 1 ] && [ "$(basename "$STARTEDAS")" = "init" ];then
-				FIRSTRUNFLAG=0
-				runOneService "agetty.service" "tty1"
-			fi
-			data="$(timeout 5.0 cat ${SERVICEPIPE} 2>/dev/null)"
-			if [ ! "X$data" = "X" ];then
-				echoWrap $data
-				main $data
-			fi
+		makeMessagePipe
+		if [ $FIRSTRUNFLAG -eq 1 ] && [ "$(basename "$STARTEDAS")" = "init" ];then
+			FIRSTRUNFLAG=0
+			runOneService "agetty.service" "tty1"
+		fi
+		data="$(timeout 5.0 cat ${SERVICEPIPE} 2>/dev/null)"
+		if [ ! "X$data" = "X" ];then
+			echoWrap $data
+			main $data
 		fi
 	done
 

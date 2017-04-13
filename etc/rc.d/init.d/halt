@@ -1,39 +1,20 @@
-#!/bin/sh
-########################################################################
-# Begin halt
-#
-# Description : Halt Script
-#
-# Authors     : Gerard Beekmans - gerard@linuxfromscratch.org
-#               DJ Lucas - dj@linuxfromscratch.org
-# Update      : Bruce Dubbs - bdubbs@linuxfromscratch.org
-#
-# Version     : LFS 7.0
-#
-########################################################################
+#!/bin/bash
 
-### BEGIN INIT INFO
-# Provides:            halt
-# Required-Start:
-# Should-Start:
-# Required-Stop:
-# Should-Stop:
-# Default-Start:       0
-# Default-Stop:
-# Short-Description:   Halts the system.
-# Description:         Halts the System.
-# X-LFS-Provided-By:   LFS
-### END INIT INFO
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
 
-case "${1}" in
-   stop)
-      halt -d -f -i -p
-      ;;
+. /etc/init.d/init-functions
 
-   *)
-      echo "Usage: {stop}"
-      exit 1
-      ;;
+case $1 in
+	stop)
+		echo "After you press Enter, this system will be owered off"
+		waitForUser
+		/etc/StartupServices/poweroff -r now
+		;;
+	*)
+		echo "Usage: {stop}"
+		exit 1
+		;;
 esac
 
-# End halt
+exit 0

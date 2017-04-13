@@ -86,4 +86,10 @@ isTrue ()
    [ "$1" = "1" ] || [ "$1" = "yes" ] || [ "$1" = "true" ]
 }
 
+waitForUser ()
+{
+	if [ "${HEADLESS=0}" = "0" ];then
+		read -p "Press Any Key ..."
+	fi
+}
 

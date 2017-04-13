@@ -4,7 +4,6 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 for i in /etc/rc.d/rc1.d/*
   do
 	  if [ -x "$i" ];then
-	  	echo "$1 start"
 		  "$i" start
 		  if [ $? -ne 0 ];then
 			  echo "Problem running $i"
