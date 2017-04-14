@@ -5,6 +5,7 @@ exec 2>&1
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 export PATH
+export COLUMNS=${COLUMNS:-$(tput cols)}
 
 if [ -f /tmp/slowdown ];then
 	SLEEP="/bin/sleep 4"

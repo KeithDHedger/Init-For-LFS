@@ -50,6 +50,8 @@ FAILURE_SUFFIX="${BRACKET}[${FAILURE} FAIL ${BRACKET}]${NORMAL}"
 WARNING_SUFFIX="${BRACKET}[${WARNING} WARN ${BRACKET}]${NORMAL}"
 INFO_SUFFIX="${BRACKET}[${INFO} INFO ${BRACKET}]${NORMAL}"
 
+[ -r /etc/sysconfig/rc.site ]  && . /etc/sysconfig/rc.site
+
 prettyInfo ()
 {
 	/bin/echo -n -e "${BMPREFIX}$1"

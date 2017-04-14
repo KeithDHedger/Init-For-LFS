@@ -29,7 +29,6 @@ init ()
 	SERVICEBASE=/etc/StartupServices
 	SERVICERUNFOLDER=/run/StartupServices
 	VERBOSELEVEL=2
-	export COLUMNS=80
 
 	if [ -e /etc/service.rc ];then
 		. /etc/service.rc
