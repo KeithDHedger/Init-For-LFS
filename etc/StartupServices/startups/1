@@ -7,9 +7,8 @@ for i in /etc/rc.d/rc1.d/*
 			COLUMNS=${COLUMNS:-$(tput cols)} "$i" start
 			if [ $? -ne 0 ];then
 				echo "Problem running $i"
-				/sbin/sulogin
+				setsid sh -c '/sbin/sulogin <>/dev/tty1 >&0 2>&1'
 				exit 1
 			fi
 		fi
 	done
-
