@@ -1,6 +1,9 @@
-#!/bin/bash -e
+#!/bin/bash
 
 #©keithhedger Sun 11 May 14:04:47 BST 2014 kdhedger68713@gmail.com
+
+# Set any user specified environment variables e.g. HEADLESS
+[ -r /etc/sysconfig/rc.site ]  && . /etc/sysconfig/rc.site
 
 if [ -z "${COLUMNS}" ]; then
    COLUMNS=$(stty size)
@@ -91,7 +94,7 @@ isTrue ()
 waitForUser ()
 {
 	if [ "${HEADLESS=0}" = "0" ];then
-		read -p "Press Any Key ..."
+		read -p "Press Any Key ..." ENTER
 	fi
 }
 

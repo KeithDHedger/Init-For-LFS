@@ -26,12 +26,15 @@ makeMessagePipe ()
 
 init ()
 {
-	SERVICEBASE="@@SYSCONFDIR@@/StartupServices"
+	export CONFFOLDER="@@SYSCONFDIR@@"
+	export EXECFOLDER="@@LIBEXECDIR@@"
+
+	SERVICEBASE="$CONFFOLDER/StartupServices"
 	SERVICERUNFOLDER=/run/StartupServices
 	VERBOSELEVEL=2
 
-	if [ -e @@SYSCONFDIR@@/service.rc ];then
-		. @@SYSCONFDIR@@/service.rc
+	if [ -e $CONFFOLDER/service.rc ];then
+		. $CONFFOLDER/service.rc
 	fi
 
 	if [ -e ~/.config/service.rc ];then
@@ -424,8 +427,8 @@ doReboot ()
 {
 	killAllServices
 	rm  ${SERVICEPIPE}
-	@@SYSCONFDIR@@/StartupServices/startups/3
-	@@LIBEXECDIR@@/InitForLFS/poweroff -r now
+	$CONFFOLDER/StartupServices/startups/3
+	$EXECFOLDER/InitForLFS/poweroff -r now
 	IMRUNNING=0
 }
 
@@ -433,8 +436,8 @@ doShutdown ()
 {
 	killAllServices
 	rm  ${SERVICEPIPE}
-	@@SYSCONFDIR@@/StartupServices/startups/3
-	@@LIBEXECDIR@@/InitForLFS/poweroff -h now
+	$CONFFOLDER/StartupServices/startups/3
+	$EXECFOLDER/InitForLFS/poweroff -h now
 	IMRUNNING=0
 }
 
@@ -544,7 +547,7 @@ case $(basename $STARTEDAS) in
 		;;
 	"reboot")
 		if [ "X$1" = "X-f" ];then
-			@@LIBEXECDIR@@/InitForLFS/poweroff -r
+			$EXECFOLDER/InitForLFS/poweroff -r
 		else
 			makeMessagePipe
 			echo "REBOOT" > ${SERVICEPIPE}

@@ -7,16 +7,13 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 export PATH
 export COLUMNS=${COLUMNS:-$(tput cols)}
 
+#kick all users except root
+who | awk '!/root/{ cmd="/sbin/pkill -KILL -u " $1; system(cmd)}'
+
 if [ -f /tmp/slowdown ];then
 	SLEEP="/bin/sleep 4"
 else
 	SLEEP=""
-fi
-
-if [ -f /tmp/waitdown ];then
-	WAITDOWN="read"
-else
-	WAITDOWN=""
 fi
 
 #wait for x to shutdown 
@@ -67,4 +64,3 @@ if [ "X${SLEEP}" != "X" ];then
 	sleep 20
 fi
 
-${WAITDOWN}
