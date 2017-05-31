@@ -1,5 +1,0 @@
-#!/bin/bash -e
-
-#©keithhedger Fri 17 Mar 11:10:58 GMT 2017 kdhedger68713@gmail.com
-
-setsid /sbin/agetty tty$1 --noclear
