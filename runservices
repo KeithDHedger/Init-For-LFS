@@ -26,12 +26,12 @@ makeMessagePipe ()
 
 init ()
 {
-	SERVICEBASE=/etc/StartupServices
+	SERVICEBASE="@@SYSCONFDIR@@/StartupServices"
 	SERVICERUNFOLDER=/run/StartupServices
 	VERBOSELEVEL=2
 
-	if [ -e /etc/service.rc ];then
-		. /etc/service.rc
+	if [ -e @@SYSCONFDIR@@/service.rc ];then
+		. @@SYSCONFDIR@@/service.rc
 	fi
 
 	if [ -e ~/.config/service.rc ];then
@@ -205,6 +205,7 @@ doRunService ()
 			file=${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile
 			cat > $file << EOF
 #!/bin/bash
+	exec 2>/dev/null
 	while [ -e ${base}.${PIDFILECNT}.keepalive ]
 		do
 			$command & 2>&1 |tee -a $logfile
@@ -218,10 +219,7 @@ doRunService ()
 		done
 EOF
 			chmod +x $file
-			(cd ${SERVICERUNFILES};./${base}.${PIDFILECNT}.runfile) &
-#			pushd ${SERVICERUNFILES}
-#				./${base}.${PIDFILECNT}.runfile &
-#			popd
+			(cd ${SERVICERUNFILES};./${base}.${PIDFILECNT}.runfile &>/dev/null) &
 			printInfo "$base launched succsefully"
 		fi
 
@@ -337,7 +335,8 @@ killService ()
 	if [ -e  ${PIDFOLDER}/${serv}.pid ];then
 		rm ${SERVICERUNFILES}/${serv}.keepalive &>/dev/null||true
 		kill -9 $(cat ${PIDFOLDER}/${serv}.pid)
-		rm  ${PIDFOLDER}/$1.pid &>/dev/null||true
+		wait $(cat ${PIDFOLDER}/${serv}.pid) &>/dev/null
+		rm  ${PIDFOLDER}/$serv.pid &>/dev/null||true
 		rm ${SERVICERUNFILES}/${serv}.runfile &>/dev/null||true
 		printInfo "Killed $serv"
 	else
@@ -350,7 +349,7 @@ killAllServices ()
 	while read
 		do
 			printInfo "Killing ${REPLY%.pid} ..."
-			killService "$(basename "$REPLY" ".pid" )"
+			killService "$(basename "$REPLY" ".pid" )" &>/dev/null
 		done < <(find "${PIDFOLDER}" -maxdepth 1 -iname "*.pid")
 }	
 
@@ -425,8 +424,8 @@ doReboot ()
 {
 	killAllServices
 	rm  ${SERVICEPIPE}
-	/etc/StartupServices/startups/3
-	/etc/StartupServices/poweroff -r now
+	@@SYSCONFDIR@@/StartupServices/startups/3
+	@@LIBEXECDIR@@/InitForLFS/poweroff -r now
 	IMRUNNING=0
 }
 
@@ -434,8 +433,8 @@ doShutdown ()
 {
 	killAllServices
 	rm  ${SERVICEPIPE}
-	/etc/StartupServices/startups/3
-	/etc/StartupServices/poweroff -h now
+	@@SYSCONFDIR@@/StartupServices/startups/3
+	@@LIBEXECDIR@@/InitForLFS/poweroff -h now
 	IMRUNNING=0
 }
 
@@ -545,7 +544,7 @@ case $(basename $STARTEDAS) in
 		;;
 	"reboot")
 		if [ "X$1" = "X-f" ];then
-			/etc/StartupServices/poweroff -r
+			@@LIBEXECDIR@@/InitForLFS/poweroff -r
 		else
 			makeMessagePipe
 			echo "REBOOT" > ${SERVICEPIPE}
