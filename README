@@ -2,14 +2,15 @@ How To
 
 !!!MAKE BACKUPS OF ALL MOVED OVERWRITTEN FILES OR ELSE!!!
 
-Copy files/folders in etc to /etc
-Build poweroff program ( See poweroff.cpp file )
-Copy poweroff executable to /etc/StartupServices/poweroff
-Copy runservices to /etc/StartupServices/runservices
-Link /sbin/init to /etc/StartupServices/runservices
-Link /sbin/shutdown and /sbin/reboot to /etc/StartupServices/runservices
-Link /sbin/servicermt to /etc/StartupServices/runservices
+As root:
 
+make install
+
+You can change install locations in the Makefile, but be warned this may break stuff and leave your system unbootable!
+You can use DESTDIR=/path/to/install to stage the install for package managers.
+
+This needs rewriting:
+#####################
 All files default to being in /etc/StartupServices, you can change this by setting /etc/service.rc, when running as a normal user the rc file is  ~/.config/service.rc
 
 Example:
@@ -22,9 +23,10 @@ in my xinitrc file
 With this config file ~/.config/service.rc
 SERVICEBASE=/home/keithhedger/StartupServices
 SERVICERUNFOLDER=${SERVICEBASE}
+#####################
 
 Basic use:
-./runservices HELP
+servicermt HELP
 
 Tue 11 Apr 16:07:26 BST 2017
 Service run folder=/home/keithhedger/StartupServices
@@ -77,13 +79,17 @@ agetty.service tty2
 agetty.service tty3
 agetty.service tty4
 
-Output will usually go to the console tty where the app has been starte from but you can redirect the output to another tty with the ECHOTOPTY command, eg set output to from init current pty:
+Output will usually go to the console tty where the app has been started from but you can redirect the output to another tty with the ECHOTOPTY command, eg set output to from init current pty:
 servicermt ECHOTOPTY $(tty)
 servicermt LOGFILE ME
 
 ...
 
-The basic LFS syv scripts are used to do all the system start up stuff, with a few tweaks.
+The (B)LFS sysv startup scripts can be used 'as is' by the usual method of placing them in /etc/rc.d/init.d and placing links in the aproppriate folder eg /etc/rc.d/rc2.d.
+
+/etc/rc.d/rc1.d contains vital system startup files, any errors drop to a sulogin shell.
+/etc/rc.d/rc2.d non essential services like gpm.
+/etc/rc.d/rc3.d shutdown files
 
 More documentaion to come!
 A small boot movie is in the git repo ( "LFSDev.webm" ) which shows a basic lfs system booting using this init system.

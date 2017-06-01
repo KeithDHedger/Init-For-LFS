@@ -1,1 +1,10 @@
 Fixed sulogin infinite loop
+Added licence stuff at to of files
+Changed install locations
+Removed unneeded files
+Added gpl text
+Fixed not unmounting all file systems
+Pipe and runtime files etc now in a tmpfs
+Errors in startup 1 now drop to sulogin properly
+Exiting sulogin continues with boot
+Started documentation
