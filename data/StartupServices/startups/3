@@ -21,16 +21,16 @@ XPID=$(pidof /usr/bin/X)
 waitpid $XPID
 
 for i in /etc/rc.d/rc3.d/*
-  do
-	  if [ -x "$i" ];then
-		  "$i" stop
-		  $SLEEP
-	  fi
-  done
+	do
+		if [ -x "$i" ];then
+			"$i" stop
+			$SLEEP
+		fi
+	done
 
 # Save the alsamixer volumes
 if [ -x /usr/sbin/alsactl ]; then
-    /usr/sbin/alsactl store &>/dev/null
+	/usr/sbin/alsactl store &>/dev/null
 fi
 
 # Sync the hardware clock
@@ -55,12 +55,12 @@ killall -q udevd
 
 #kill syslog
 killall -q syslogd
+killall -q klogd
 
 # Unmount all non-virtual partitions
 /etc/rc.d/init.d/mountfs "stop"
 
 if [ "X${SLEEP}" != "X" ];then
 	echo "Shutting down/Rebooting now ..."
-	sleep 20
+	sleep 10
 fi
-

@@ -5,7 +5,7 @@
 #
 # This file (cleanfs) is part of Init-For-LFS.
 #
-# rc.d is free software: you can redistribute it and/or modify
+# Init-For-LFS is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # at your option) any later version.
@@ -57,12 +57,10 @@ create_files()
 								;;
 							*)
 								:
-#                     log_warning_msg "\nUnknown device type: ${dtype}" 
 								;;
 						esac
 						;;
 					*)
-#               log_warning_msg "\nUnknown type: ${type}" 
 						continue
 						;;
 				esac
@@ -105,6 +103,4 @@ if egrep -qv '^(#|$)' /etc/sysconfig/createfiles 2>/dev/null; then
 fi
 
 prettyMsgResult $MOUNTRESULT
-
-
 

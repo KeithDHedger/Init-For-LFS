@@ -1,12 +1,11 @@
 #!/bin/sh
 
-
 #
 # ©K. D. Hedger. Thu  1 Jun 13:02:35 BST 2017 kdhedger68713@gmail.com
 #
 # This file (cups) is part of Init-For-LFS.
 #
-# rc.d is free software: you can redistribute it and/or modify
+# Init-For-LFS is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # at your option) any later version.
@@ -55,4 +54,4 @@ case $1 in
       ;;
 esac
 
-# End /etc/init.d/cups
+exit 0

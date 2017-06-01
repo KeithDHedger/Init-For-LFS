@@ -5,7 +5,7 @@
 #
 # This file (runservices) is part of Init-For-LFS.
 #
-# Projects is free software: you can redistribute it and/or modify
+# Init-For-LFS is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # at your option) any later version.
@@ -21,11 +21,17 @@
 
 mountTmpFS ()
 {
-	mount -t tmpfs -o size=512m tmpfs ${SERVICERUNFOLDER}
+	if ! mountpoint ${SERVICERUNFOLDER} &>/dev/null;then
+		mount -t tmpfs -o size=512m tmpfs ${SERVICERUNFOLDER}
+	fi
 }
 
 makeMessagePipe ()
 {
+	if [ -e ${SERVICEPIPE} ];then
+		return
+	fi
+
 	if [ -w ${SERVICERUNFOLDER} ];then
 		while [ ! -e ${SERVICEPIPE} ]
 			do
@@ -35,7 +41,6 @@ makeMessagePipe ()
 			done
 	else
 		mountTmpFS
-		mkdir -vp ${SERVICERUNFOLDER}
 		makeMessagePipe
 	fi
 }
@@ -46,7 +51,9 @@ init ()
 	export BINDIR="@@SBINDIR@@"
 
 	SERVICEBASE="$CONFFOLDER/StartupServices"
-	SERVICERUNFOLDER=/run/StartupServices
+	export SERVICERUNFOLDER=$CONFFOLDER/StartupServices/runtime
+	mountTmpFS
+
 	VERBOSELEVEL=2
 
 	if [ -e $CONFFOLDER/service.rc ];then
@@ -62,7 +69,7 @@ init ()
 	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
 	SERVICEFILE=${SERVICEFILE:-services}
 	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
-	LOGSFOLDER=${SERVICEBASE}/servicelogs
+	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
 	SERVICEPIPE=${SERVICERUNFOLDER}/servicepipe
 
 	LOGFILE=
@@ -79,6 +86,7 @@ init ()
 
 	TOPTY=
 
+	mkfifo ${SERVICEPIPE} &>/dev/null||true
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	printInfo "$(date)"
 }
@@ -152,8 +160,6 @@ doService ()
 	fi
 			
 	echo $pid > $pidfile
-
-#	echoWrap "log=$LOGFILE, rt=$RUNTYPE, command=$COMMAND, pidfile=$pidfile, basename=$BASENAME "
 	fi
 }
 
@@ -171,9 +177,6 @@ doRunService ()
 	logfile=$3
 	pidfile=$4
 	runtype=$5
-
-#	echoWrap " basename=$1, command=$2 log=$3, pidfile=$4, rt=$5"
-#	echoWrap " basename=$base, command=$command log=$logfile, pidfile=$pidfile, rt=$runtype"
 
 	if [ "X$command" != "X" ];then
 		if [ $runtype != "nocontrol" ];then
@@ -200,7 +203,7 @@ doRunService ()
 					if [[ $count -eq 0 ]];then
 #checks if process executed successfully or not
 						if wait $pid; then
-        		        	break;
+							break;
 						else
 #process terminated abnormally
 							printInfo "Try $j failed (returned $?), Trying again ..."
@@ -310,7 +313,6 @@ runOneService ()
 					;;
 			esac
 		done < ${SERVICEFILESFOLDER}/${base}.service
-
 
 #run the commands
 	while read
@@ -444,8 +446,10 @@ doReboot ()
 	killAllServices
 	rm  ${SERVICEPIPE}
 	$CONFFOLDER/StartupServices/startups/3
-	$BINDIR/poweroff -r now
+	umount -f "$SERVICERUNFOLDER" &>/dev/null
+	mount -n -o remount,ro / &>/dev/null
 	IMRUNNING=0
+	$BINDIR/poweroff -r now
 }
 
 doShutdown ()
@@ -453,8 +457,10 @@ doShutdown ()
 	killAllServices
 	rm  ${SERVICEPIPE}
 	$CONFFOLDER/StartupServices/startups/3
-	$BINDIR/poweroff -h now
+	umount -f "$SERVICERUNFOLDER" &>/dev/null
+	mount -n -o remount,ro / &>/dev/null
 	IMRUNNING=0
+	$BINDIR/poweroff -h now
 }
 
 main ()

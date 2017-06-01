@@ -1,16 +1,17 @@
 #!/bin/sh
 
+
 #
 # ©K. D. Hedger. Thu  1 Jun 12:55:23 BST 2017 kdhedger68713@gmail.com
 #
 # This file (mountvirtfs) is part of Init-For-LFS.
 #
-# rc.d is free software: you can redistribute it and/or modify
+# Init-For-LFS is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # at your option) any later version.
 #
-# rc.d is distributed in the hope that it will be useful,
+# Init-For-LFS is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
@@ -59,3 +60,5 @@ fi
 
 cp -a /lib/udev/devices/* /dev
 ln -sfn /run/shm /dev/shm
+
+exit 0

@@ -5,7 +5,7 @@
 #
 # This file (modules) is part of Init-For-LFS.
 #
-# rc.d is free software: you can redistribute it and/or modify
+# Init-For-LFS is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # at your option) any later version.
@@ -52,25 +52,27 @@ fi
 prettyMsgStart "Loading modules"
 prettyMsgResult "INFO"
 
-	while read module args
-		do
-			MOUNTRESULT="OK"
+while read module args
+	do
+		MOUNTRESULT="OK"
 # Ignore comments and blank lines.
-			case "$module" in
-				""|"#"*) continue ;;
-			esac
+		case "$module" in
+			""|"#"*) continue
+			;;
+		esac
 
 # Attempt to load the module, passing any arguments provided.
-			prettyMsgStart "Loading ${module}"
-			modprobe ${module} ${args} >/dev/null
+		prettyMsgStart "Loading ${module}"
+		modprobe ${module} ${args} >/dev/null
 
 # Print the module name if successful, otherwise take note.
-			if [ $? -eq 0 ];then
-				prettyMsgResult "OK"
-			else
- 				prettyMsgResult "WARN"
-			fi
-		done < /etc/sysconfig/modules
+		if [ $? -eq 0 ];then
+			prettyMsgResult "OK"
+		else
+			prettyMsgResult "WARN"
+		fi
+	done < /etc/sysconfig/modules
 
+exit 0
 
 

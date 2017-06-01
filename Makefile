@@ -7,7 +7,7 @@ SBINDIR=/sbin
 all:
 
 install:
-	mkdir -vp $(DESTDIR)$(SBINDIR) $(DESTDIR)$(SYSCONFDIR)
+	mkdir -vp $(DESTDIR)$(SBINDIR) $(DESTDIR)$(SYSCONFDIR) $(DESTDIR)$(SYSCONFDIR)/StartupServices/runtime
 	g++ -Wall poweroff.cpp -o $(DESTDIR)$(SBINDIR)/poweroff
 	strip $(DESTDIR)$(SBINDIR)/poweroff
 	cp runservices $(DESTDIR)$(SBINDIR)

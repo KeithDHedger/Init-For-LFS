@@ -5,7 +5,7 @@
 #
 # This file (swap) is part of Init-For-LFS.
 #
-# rc.d is free software: you can redistribute it and/or modify
+# Init-For-LFS is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # at your option) any later version.
@@ -36,3 +36,5 @@ case $1 in
 		prettyMsgResult $MOUNTRESULT
 		;;
 esac
+
+exit 0
