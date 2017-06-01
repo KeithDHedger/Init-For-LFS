@@ -2,9 +2,9 @@
 
 #
 # ©K. D. Hedger. Thu  1 Jun 12:55:23 BST 2017 kdhedger68713@gmail.com
-
-# This file (00-mountvirtfs) is part of Init-For-LFS.
-
+#
+# This file (mountvirtfs) is part of Init-For-LFS.
+#
 # rc.d is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
