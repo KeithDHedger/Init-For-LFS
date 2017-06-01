@@ -1,7 +1,23 @@
 #!/bin/bash
 
-#©keithhedger Sat 4 Mar 15:35:56 GMT 2017 kdhedger68713@gmail.com
-
+#
+# ©K. D. Hedger. Thu  1 Jun 14:27:16 BST 2017 kdhedger68713@gmail.com
+#
+# This file (runservices) is part of Init-For-LFS.
+#
+# Projects is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# at your option) any later version.
+#
+# Projects is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Init-For-LFS.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 mountTmpFS ()
 {
@@ -27,7 +43,7 @@ makeMessagePipe ()
 init ()
 {
 	export CONFFOLDER="@@SYSCONFDIR@@"
-	export EXECFOLDER="@@LIBEXECDIR@@"
+	export BINDIR="@@SBINDIR@@"
 
 	SERVICEBASE="$CONFFOLDER/StartupServices"
 	SERVICERUNFOLDER=/run/StartupServices
@@ -428,7 +444,7 @@ doReboot ()
 	killAllServices
 	rm  ${SERVICEPIPE}
 	$CONFFOLDER/StartupServices/startups/3
-	$EXECFOLDER/InitForLFS/poweroff -r now
+	$BINDIR/poweroff -r now
 	IMRUNNING=0
 }
 
@@ -437,7 +453,7 @@ doShutdown ()
 	killAllServices
 	rm  ${SERVICEPIPE}
 	$CONFFOLDER/StartupServices/startups/3
-	$EXECFOLDER/InitForLFS/poweroff -h now
+	$BINDIR/poweroff -h now
 	IMRUNNING=0
 }
 
@@ -547,7 +563,7 @@ case $(basename $STARTEDAS) in
 		;;
 	"reboot")
 		if [ "X$1" = "X-f" ];then
-			$EXECFOLDER/InitForLFS/poweroff -r
+			$BINDIR/poweroff -r
 		else
 			makeMessagePipe
 			echo "REBOOT" > ${SERVICEPIPE}

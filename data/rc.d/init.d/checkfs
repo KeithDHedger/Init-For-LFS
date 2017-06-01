@@ -68,7 +68,7 @@ case $1 in
 				prettyMsgStart "File system errors fixed, will reboot in 10 seconds"
 				prettyMsgResult "FAIL"
 				sleep 10
-				$EXECFOLDER/InitForLFS/poweroff -r
+				$BINDIR/poweroff -r
 				exit 0
 				;;
 			*)
