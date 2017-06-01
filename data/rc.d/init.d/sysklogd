@@ -10,7 +10,6 @@ parms=${SYSKLOGD_PARMS-'-m 0'}
 /sbin/syslogd $parms|| MOUNTRESULT="FAIL"
 prettyMsgResult $MOUNTRESULT
 
-
 MOUNTRESULT="OK"
 prettyMsgStart "Starting kernel log daemon"
 /sbin/klogd|| MOUNTRESULT="FAIL"
