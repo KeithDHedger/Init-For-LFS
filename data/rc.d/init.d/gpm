@@ -1,27 +1,23 @@
 #!/bin/sh
-#######################################################################
-# Begin /etc/init.d/gpm
-#
-# Description : Start GPM Console Mouse Service
-#
-# Author      : DJ Lucas - dj@linuxfromscratch.org
-#
-# Version     : LFS 7.0
-#
-########################################################################
 
-### BEGIN INIT INFO
-# Provides:            gpm
-# Required-Start:      $network $local_fs
-# Should-Start:
-# Required-Stop:       $local_fs $network
-# Should-Stop:
-# Default-Start:       3 4 5
-# Default-Stop:        0 1 2 6
-# Short-Description:   Starts and stops the GPM console mouse service.
-# Description:         Starts and stops the GPM console mouse service.
-# X-LFS-Provided-By:   BLFS / LFS 7.0
-### END INIT INFO
+#
+# ©K. D. Hedger. Thu  1 Jun 13:04:21 BST 2017 kdhedger68713@gmail.com
+#
+# This file (gpm) is part of Init-For-LFS.
+#
+# rc.d is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# at your option) any later version.
+#
+# rc.d is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Init-For-LFS.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 . /etc/init.d/init-functions
 

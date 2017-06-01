@@ -10,10 +10,9 @@ prettyMsgResult "INFO"
 if ! grep -q '[[:space:]]sysfs' /proc/mounts; then
 	prettyMsgResult "FAIL"
 	echo "FAILURE:\n\nUnable to create devices without a SysFS filesystem\n\n"
-	echo "After you press Enter, this system will be halted and powered off.\n\n"
-	echo "Press Enter to continue"
-	read
-	/sbin/shutdown
+	echo "This system will be halted and powered off in 5 seconds.\n\n"
+	$EXECFOLDER/InitForLFS/poweroff
+
 else
 	prettyMsgResult "INFO"
 fi
