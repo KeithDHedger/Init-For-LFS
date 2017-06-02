@@ -67,7 +67,7 @@ case $1 in
 			2|3)
 				prettyMsgStart "File system errors fixed, will reboot in 10 seconds"
 				prettyMsgResult "FAIL"
-				sleep 10
+				waitForUserTimeOut 10
 				$BINDIR/poweroff -r
 				exit 0
 				;;

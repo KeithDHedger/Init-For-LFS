@@ -7,7 +7,11 @@ As root:
 make install
 
 You can change install locations in the Makefile, but be warned this may break stuff and leave your system unbootable!
-You can use DESTDIR=/path/to/install to stage the install for package managers.
+You can use:
+
+make install DESTDIR=/path/to/install
+
+To stage the install for package managers.
 
 This needs rewriting:
 #####################

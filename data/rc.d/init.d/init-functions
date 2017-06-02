@@ -111,7 +111,13 @@ isTrue ()
 waitForUser ()
 {
 	if [ "${HEADLESS=0}" = "0" ];then
-		read -p "Press Any Key ..." ENTER
+		read -n1 -p "Press Any Key ..." ENTER
 	fi
 }
 
+waitForUserTimeOut ()
+{
+	if [ "${HEADLESS=0}" = "0" ];then
+		read -n1 -t $1 -p "Press Any Key ..." ENTER
+	fi
+}

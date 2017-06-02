@@ -8,3 +8,5 @@ Pipe and runtime files etc now in a tmpfs
 Errors in startup 1 now drop to sulogin properly
 Exiting sulogin continues with boot
 Started documentation
+Changed Makefile
+Fixed wait for user input during boot problems

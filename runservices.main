@@ -332,9 +332,11 @@ runOneService ()
 runAllServices ()
 {
 	local replyarray
+	local fd
 
+	exec {fd}<"${SERVICEDATA}/${SERVICEFILE}"
 	rm ${PIDFOLDER}/*.pid &>/dev/null||true
-	while read
+	while read -u ${fd}
 		do
 			replyarray=( $REPLY )
 			if [ "X${replyarray[0]}" != "X" ];then
@@ -346,7 +348,8 @@ runAllServices ()
 					eval "${REPLY}"
 				fi
 			fi
-		done < ${SERVICEDATA}/${SERVICEFILE}
+		done
+	exec {fd}<&-
 }	
 
 killService ()
@@ -581,11 +584,6 @@ case $(basename $STARTEDAS) in
 		main $@
 		;;
 esac
-
-echo ">>>>>>>>>>>>>>>>"
-read ENTER
-echo ">>>${ENTER}<<<"
-echo "<<<<<<<<<<<<<<<<"
 
 while [ $IMRUNNING -eq 1 ]
 	do
