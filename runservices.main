@@ -289,6 +289,7 @@ runOneService ()
 	local base logfile command runtype pidfile
 	local comcnt
 	local serviceargs
+	local fd
 
 	base=${1%%.?*}
 	serviceargs=$2
@@ -297,7 +298,8 @@ runOneService ()
 	logfile=${LOGSFOLDER}/${base}.log
 	runtype="once"
 #set files etc
-	while read
+	exec {fd}<"${SERVICEFILESFOLDER}/${base}.service"
+	while read -u ${fd}
 		do
 			com=$(echo $REPLY|awk '{print $1}')
 			args="$(echo -e "${REPLY:${#com}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//')"
@@ -312,10 +314,12 @@ runOneService ()
 					pidfile=$args
 					;;
 			esac
-		done < ${SERVICEFILESFOLDER}/${base}.service
+		done
+	exec {fd}<&-
 
 #run the commands
-	while read
+	exec {fd}<"${SERVICEFILESFOLDER}/${base}.service"
+	while read -u ${fd}
 		do
 			com=$(echo $REPLY|awk '{print $1}')
 			args="$(echo -e "${REPLY:${#com}:1000}" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//') $serviceargs"
@@ -325,8 +329,9 @@ runOneService ()
 					sleep 0.1
 				fi
 			fi
-		done < <(cat ${SERVICEFILESFOLDER}/${base}.service)
+		done
 	(( PIDFILECNT++ ))
+	exec {fd}<&-
 }
 
 runAllServices ()
@@ -370,11 +375,15 @@ killService ()
 
 killAllServices ()
 {
-	while read
+	local fd
+
+	exec {fd}< <(find "${PIDFOLDER}" -maxdepth 1 -iname "*.pid")
+	while read -u ${fd}
 		do
 			printInfo "Killing ${REPLY%.pid} ..."
 			killService "$(basename "$REPLY" ".pid" )" &>/dev/null
-		done < <(find "${PIDFOLDER}" -maxdepth 1 -iname "*.pid")
+		done
+	exec {fd}<&-
 }	
 
 printLogfile ()
@@ -412,10 +421,14 @@ removeAllLogs ()
 
 showPid ()
 {
-	while read
+	local fd
+
+	exec {fd}< <(find "${PIDFOLDER}" -maxdepth 1 -iname "*.pid")
+	while read -u ${fd}
 		do
 			echoWrap "Pid of $(basename "$REPLY")=$(cat $REPLY)"
-		done < <(find "${PIDFOLDER}" -maxdepth 1 -iname "*.pid")
+		done
+	exec {fd}<&-
 }
 
 showStatus ()
