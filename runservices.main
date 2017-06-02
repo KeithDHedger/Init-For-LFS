@@ -582,6 +582,11 @@ case $(basename $STARTEDAS) in
 		;;
 esac
 
+echo ">>>>>>>>>>>>>>>>"
+read ENTER
+echo ">>>${ENTER}<<<"
+echo "<<<<<<<<<<<<<<<<"
+
 while [ $IMRUNNING -eq 1 ]
 	do
 		makeMessagePipe
