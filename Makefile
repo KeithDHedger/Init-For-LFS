@@ -5,12 +5,15 @@ SYSCONFDIR=/etc
 SBINDIR=/sbin
 
 all:
-
+	cp runservices.main runservices
+	sed -i "s|@@SYSCONFDIR@@|$(SYSCONFDIR)|g" "runservices"
+	sed -i "s|@@SBINDIR@@|$(SBINDIR)|g" "runservices"
+	
 install:
 	mkdir -vp $(DESTDIR)$(SBINDIR) $(DESTDIR)$(SYSCONFDIR) $(DESTDIR)$(SYSCONFDIR)/StartupServices/runtime
 	g++ -Wall poweroff.cpp -o $(DESTDIR)$(SBINDIR)/poweroff
 	strip $(DESTDIR)$(SBINDIR)/poweroff
-	cp runservices $(DESTDIR)$(SBINDIR)
+	cp runservices.main "$(DESTDIR)$(SBINDIR)/runservices"
 	sed -i "s|@@SYSCONFDIR@@|$(SYSCONFDIR)|g" "$(DESTDIR)$(SBINDIR)/runservices"
 	sed -i "s|@@SBINDIR@@|$(SBINDIR)|g" "$(DESTDIR)$(SBINDIR)/runservices"
 	( cd $(DESTDIR)$(SBINDIR); ln -sfv runservices init )
