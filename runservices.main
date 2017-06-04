@@ -49,6 +49,7 @@ init ()
 {
 	export CONFFOLDER="@@SYSCONFDIR@@"
 	export BINDIR="@@SBINDIR@@"
+	export VERSION="@@VERSION@@"
 
 	SERVICEBASE="$CONFFOLDER/StartupServices"
 	export SERVICERUNFOLDER=$CONFFOLDER/StartupServices/runtime
@@ -489,6 +490,7 @@ main ()
 
 	case $command in
 		"HELP")
+			echoWrap "Version $VERSION"
 			echoWrap "Service run folder=$SERVICERUNFOLDER"
 			echoWrap "Service Data=$SERVICEDATA"
 			echoWrap "Service File=$SERVICEFILE"
