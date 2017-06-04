@@ -1,9 +1,9 @@
 
 
+VERSION=0.0.3
 PREFIX=/usr
 SYSCONFDIR=/etc
 SBINDIR=/sbin
-VERSION=0.0.3
 
 all:
 	cp runservices.main runservices
