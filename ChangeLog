@@ -13,3 +13,5 @@ Fixed wait for user input during boot problems
 Code clean
 Started versioning
 Added ifup/down
+Added files needed by if*
+Added /lib/lsb* for 3rd party sysv scripts that need the function file

@@ -25,8 +25,8 @@ install:
 	( cd $(DESTDIR)$(SBINDIR); ln -sfv runservices reboot )
 	( cd $(DESTDIR)$(SBINDIR); ln -sfv runservices servicermt )
 	cp -r data/* $(DESTDIR)$(SYSCONFDIR)
-	cp scripts/ifup scripts/ifdown $(DESTDIR)$(SBINDIR
+	cp scripts/ifup scripts/ifdown $(DESTDIR)$(SBINDIR)
 	cp scripts/ifup.8 $(DESTDIR)$(PREFIX)/share/man/man8
-	cp scripts/sysconfig $(DESTDIR)$(SYSCONFDIR)
+	cp -r scripts/sysconfig $(DESTDIR)$(SYSCONFDIR)
 	cp -r scripts/services $(DESTDIR)/lib
-	( cd $(DESTDIR)/lib); ln -sfv services lsb )
+	( cd $(DESTDIR)/lib; ln -sfv services lsb )
