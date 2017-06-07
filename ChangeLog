@@ -12,4 +12,4 @@ Changed Makefile
 Fixed wait for user input during boot problems
 Code clean
 Started versioning
-
+Added ifup/down

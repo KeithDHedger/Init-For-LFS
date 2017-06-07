@@ -12,7 +12,8 @@ all:
 	sed -i "s|@@VERSION@@|$(VERSION)|g" "runservices"
 	
 install:
-	mkdir -vp $(DESTDIR)$(SBINDIR) $(DESTDIR)$(SYSCONFDIR) $(DESTDIR)$(SYSCONFDIR)/StartupServices/runtime
+	mkdir -vp $(DESTDIR)$(SBINDIR) $(DESTDIR)$(SYSCONFDIR) $(DESTDIR)$(SYSCONFDIR)/StartupServices/runtime $(DESTDIR)/lib/services
+	mkdir -vp  $(DESTDIR)$(PREFIX)/share/man/man8 ||true
 	g++ -Wall poweroff.cpp -o $(DESTDIR)$(SBINDIR)/poweroff
 	strip $(DESTDIR)$(SBINDIR)/poweroff
 	cp runservices.main "$(DESTDIR)$(SBINDIR)/runservices"
@@ -24,4 +25,6 @@ install:
 	( cd $(DESTDIR)$(SBINDIR); ln -sfv runservices reboot )
 	( cd $(DESTDIR)$(SBINDIR); ln -sfv runservices servicermt )
 	cp -r data/* $(DESTDIR)$(SYSCONFDIR)
-
+	cp sbinscripts/ifup sbinscripts/ifdown $(DESTDIR)$(SBINDIR
+	cp sbinscripts/ifup.8 $(DESTDIR)$(PREFIX)/share/man/man8
+	cp sbinscripts/sysconfig $(DESTDIR)$(SYSCONFDIR)
