@@ -11,11 +11,9 @@ lfspanel-1.service
 lfspanel-2.service
 lfspanel-3.service
 
-
 cairodock.service
 conky.service
 screensaver.service
-
 
 setxkbmap -layout gb &>/dev/null &
 /home/keithhedger/Scripts/StartBindKeys &>/dev/null &
@@ -23,6 +21,7 @@ setxkbmap -layout gb &>/dev/null &
 chromium &
 thunderbird &
 
+xdecorations -configfile /home/keithhedger/.XDecorations/autumn1.rc &
 
 sleep 5
 lfsdesktop.service

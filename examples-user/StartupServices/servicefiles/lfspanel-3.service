@@ -1,2 +1,2 @@
 COMMAND lfspanel RIGHT
-RUNTYPE	once
+RUNTYPE	keepalive

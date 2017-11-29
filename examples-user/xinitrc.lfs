@@ -1,0 +1,52 @@
+#!/bin/sh
+
+#export DESKTOP_SESSION=xfce
+
+usermodmap=$HOME/.Xmodmap
+sysresources=/etc/X11/app-defaults/.Xresources
+sysmodmap=/etc/X11/app-defaults/.Xmodmap
+xcursorsfile=$HOME/xinits/XDefaults/XCursorsfile
+customcolours=$HOME/xinits/XDefaults/XDefaults
+
+# merge in defaults and keymaps
+
+if [ -f $xcursorsfile ]; then
+    xrdb -merge $xcursorsfile
+fi
+
+if [ -f $sysresources ]; then
+    xrdb -merge $sysresources
+fi
+
+if [ -f $sysmodmap ]; then
+    xmodmap $sysmodmap
+fi
+
+if [ -f $customcolours ]; then
+    xrdb -merge $customcolours
+fi
+
+if [ -f "$usermodmap" ]; then
+    xmodmap "$usermodmap"
+fi
+
+#linuxdata
+udevil mount $(findfs UUID=96347d37-6c5e-4a4d-8616-af519e44ed5e) &> /dev/null
+#skynet
+udevil mount $(findfs UUID=46e7b8bd-43fb-47c5-bd40-a806eab49110) &> /dev/null
+
+servicermt RUNALL
+
+file=`mktemp -u`
+cat > $file << EOF
+#!/bin/bash
+echo $$ > /tmp/lfssession.pid
+while [ -e /tmp/lfssession.pid ]
+	do
+		sleep 5
+	done
+EOF
+chmod +x $file
+$file
+
+rm /tmp/lfssession.pid $file

@@ -21,8 +21,12 @@
 
 mountTmpFS ()
 {
-	if ! mountpoint ${SERVICERUNFOLDER} &>/dev/null;then
-		mount -t tmpfs -o size=512m tmpfs ${SERVICERUNFOLDER}
+	local userid=$(id -u)
+
+	if [ $userid -eq 0 ];then
+		if ! mountpoint ${SERVICERUNFOLDER} &>/dev/null;then
+			mount -t tmpfs -o size=2m tmpfs ${SERVICERUNFOLDER}
+		fi
 	fi
 }
 
@@ -45,33 +49,79 @@ makeMessagePipe ()
 	fi
 }
 
+#returns 1=number 2=string 0=NULL
+testVarType ()
+{
+	case "$1" in
+		[0-9]*)
+			return 1
+			;;
+		[a-zA-Z]*)
+			return 2
+			;;
+		*)
+			return 0
+			;;
+	esac
+}
+
+initBaseFolders ()
+{
+
+	local basefolder
+
+	if [ $(testVarType $USERID;echo $? ) -eq 1 ] && [ $USERID -ne 0 ] && [ $(testVarType $USERNAME;echo $? ) -eq 2 ];then
+		basefolder="$(getent passwd $USERNAME | cut -d : -f 6)"
+	else
+		basefolder="@@SYSCONFDIR@@"
+	fi
+
+	export CONFFOLDER="$basefolder"
+	SERVICEBASE="$CONFFOLDER/StartupServices"
+	export SERVICERUNFOLDER=${SERVICEBASE}/runtime
+	mkdir -vp "$SERVICERUNFOLDER"
+	mountTmpFS
+
+	SERVICEDATA=${SERVICEBASE}/servicedata
+	SERVICEFILE=services
+
+	SERVICEFILESFOLDER=${SERVICEBASE}/servicefiles
+	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
+	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
+	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
+
+	SERVICEPIPE="/etc/StartupServices/runtime/servicepipe"
+
+	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+	if [ $USERID -ne 0 ];then
+		chown $USERNAME:$USERNAME "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+		chmod 755 $USERNAME:$USERNAME "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+	fi
+}
+
 init ()
 {
-	export CONFFOLDER="@@SYSCONFDIR@@"
+	local basefolder
+	local userid
+	local username
+
 	export BINDIR="@@SBINDIR@@"
 	export VERSION="@@VERSION@@"
 
-	SERVICEBASE="$CONFFOLDER/StartupServices"
-	export SERVICERUNFOLDER=$CONFFOLDER/StartupServices/runtime
-	mountTmpFS
-
 	VERBOSELEVEL=2
 
-	if [ -e $CONFFOLDER/service.rc ];then
-		. $CONFFOLDER/service.rc
-	fi
+#	if [ -e $CONFFOLDER/service.rc ];then
+#		. $CONFFOLDER/service.rc
+#	fi
+#
+#	if [ -e ~/.config/service.rc ];then
+#		. ~/.config/service.rc
+#	fi
 
-	if [ -e ~/.config/service.rc ];then
-		. ~/.config/service.rc
-	fi
+	USERID=$(id -u)
+	USERNAME=$(id -nu)
 
-	SERVICEDATA=${SERVICEBASE}/servicedata
-	SERVICEFILESFOLDER=${SERVICEBASE}/servicefiles
-	SERVICERUNFILES=${SERVICERUNFOLDER}/servicerunfiles
-	SERVICEFILE=${SERVICEFILE:-services}
-	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
-	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
-	SERVICEPIPE=${SERVICERUNFOLDER}/servicepipe
+	initBaseFolders
 
 	LOGFILE=
 	COMMAND=
@@ -87,8 +137,10 @@ init ()
 
 	TOPTY=
 
-	mkfifo ${SERVICEPIPE} &>/dev/null||true
-	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+	if [ $USERID -eq 0 ];then
+		mkfifo ${SERVICEPIPE} &>/dev/null||true
+		chmod 666 ${SERVICEPIPE}
+	fi
 	printInfo "$(date)"
 }
 
@@ -196,8 +248,13 @@ doRunService ()
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-					$command &  2>&1 |tee -a $logfile
-					pid=$!
+					if [ $USERID -eq 0 ];then
+						$command &  2>&1 |tee -a $logfile
+						pid=$!
+					else
+						su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
+						pid=$!
+					fi
 #check whether process is still running
 					count=$(ps -A| grep $pid |wc -l)
 #if process is already terminated, then there can be two cases, the process executed and stop successfully or it is terminated abnormally
@@ -242,7 +299,11 @@ doRunService ()
 		done
 EOF
 			chmod +x $file
-			(cd ${SERVICERUNFILES};./${base}.${PIDFILECNT}.runfile &>/dev/null) &
+			if [ $USERID -eq 0 ];then
+				(cd ${SERVICERUNFILES};./${base}.${PIDFILECNT}.runfile &>/dev/null) &
+			else
+				(cd ${SERVICERUNFILES};su - $USERNAME -c "./${base}.${PIDFILECNT}.runfile &>/dev/null") &
+			fi
 			printInfo "$base launched succsefully"
 		fi
 
@@ -250,8 +311,14 @@ EOF
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-					$command & 2>&1 |tee -a $logfile
-					pid=$!
+
+					if [ $USERID -eq 0 ];then
+						$command &  2>&1 |tee -a $logfile
+						pid=$!
+					else
+						su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
+						pid=$!
+					fi
 #check whether process is still running
 					count=$(ps -A| grep $pid |wc -l)
 #if process is already terminated, then there can be two cases, the process executed and stop successfully or it is terminated abnormally
@@ -278,7 +345,11 @@ EOF
 
 #wait for command to finish
 		if [ $runtype = "wait" ];then
-			$command 2>&1 |tee -a $logfile
+			if [ $USERID -eq 0 ];then
+				$command 2>&1 |tee -a $logfile
+			else
+				su - $USERNAME -c "($command 2>&1 |tee -a $logfile)"
+			fi
 		fi
 	fi
 }
@@ -351,7 +422,11 @@ runAllServices ()
 					runOneService ${replyarray[0]%%.?*} ${replyarray[1]}
 				else
 					printInfo "Evaluating command $REPLY"
-					eval "${REPLY}"
+#					if [ $USERID -eq 0 ];then
+#						eval "${REPLY}"
+#					else
+					su - $USERNAME -c "${REPLY}"
+#					fi
 				fi
 			fi
 		done
@@ -499,15 +574,21 @@ main ()
 			echoWrap "Pid folder=$PIDFOLDER"
 			echoWrap "Logs folder=$LOGSFOLDER"
 			echoWrap "Format:"
-			echoWrap "runservice RUN servicename"
-			echoWrap "runservice RUNALL"
-			echoWrap "runservice KILL servicename"
-			echoWrap "runservice KILLALL"
-			echoWrap "runservice LOGFILE servicename|ME"
-			echoWrap "runservice RMLOG servicename"
-			echoWrap "runservice RMALLLOGS"
-			echoWrap "runservice PID servicename"
-			echoWrap "runservice SHOWPIDS"
+			echoWrap "servicermt RUN servicename. Run service 'servicename' ( without suffix )."
+			echoWrap "servicermt RUNALL. Run all services for current user."
+			echoWrap "servicermt KILL servicename. Kill single servoce by name."
+			echoWrap "servicermt KILLALL. Kill all running services."
+			echoWrap "servicermt LOGFILE servicename|ME. Show log for 'servicename' or main log ( ME )."
+			echoWrap "servicermt RMLOG servicename. Delete log for 'servicename'."
+			echoWrap "servicermt RMALLLOGS. Delete all service logs."
+			echoWrap "servicermt SHOWPIDS. Show all pids for current user."
+			echoWrap "servicermt STATUS servicename. Show current status for 'servicename'"
+			echoWrap "servicermt PIDFILECNT pidcnt. Set the auto number for services."
+			echoWrap "servicermt REBOOT"
+			echoWrap "servicermt SHUTDOWN"
+			echoWrap "servicermt ECHOTOPTY tty. Send output to tty"
+			echoWrap "servicermt SETVERBOSE 0|1|2. Set verbosity, 0=quiet, 1=echo to tty, 2=echo to tty and log ( default )."
+			echoWrap "servicermt USERSERVICES. Run all services for current user"
 			echoWrap
 			echoWrap "Service file format:"
 			echoWrap "COMMAND command to run"
@@ -516,8 +597,7 @@ main ()
 			echoWrap "RUNTYPE	once|keepalive|nocontrol|wait, default once"
 			echoWrap "LOGFILE path, default $LOGSFOLDER/service.log"
 			echoWrap "PIDFILE path, default $PIDFOLDER/service.pid"
-			echoWrap "STATUS service"
-			echoWrap "PIDFILECNT pidcnt, set the auto PIDFILECNT var manually"
+			echoWrap
 			echoWrap "Pipe commands to ${SERVICEPIPE}"
 			;;
 		"RUN")
@@ -543,7 +623,7 @@ main ()
 			removeAllLogs
 			;;
 		"SHOWPIDS")
-			showPid $2;
+			showPid;
 			;;
 		"STATUS")
 			showStatus $2
@@ -552,13 +632,34 @@ main ()
 			PIDFILECNT=$2
 			;;
 		"REBOOT")
-			doReboot
+			if [ $USERID -ne 0 ];then
+				printInfo "Must be root to reboot ..."
+			else
+				doReboot
+			fi
 			;;
 		"SHUTDOWN")
-			doShutdown
+			if [ $USERID -ne 0 ];then
+				printInfo "Must be root to shutdown ..."
+			else
+				doShutdown
+			fi
 			;;
 		"ECHOTOPTY")
 			TOPTY=$2
+			;;
+		"SETVERBOSE")
+			VERBOSELEVEL=$2
+			;;
+#user services
+		"SETUSER")
+			USERID=$2
+			USERNAME=$3
+			initBaseFolders
+			;;		
+
+		"USERSERVICES")
+			runAllServices
 			;;
 	esac
 }
@@ -576,17 +677,36 @@ case $(basename $STARTEDAS) in
 		fi
 		;;
 	"servicermt")
+		holdtty=$TOPTY
 		makeMessagePipe
+		echo "ECHOTOPTY" $(tty) > ${SERVICEPIPE}
+		echo "SETUSER" $(id -u) $(id -nu) > ${SERVICEPIPE}
 		echo "$@" > ${SERVICEPIPE}
+		echo "ECHOTOPTY" $holdtty > ${SERVICEPIPE}
+		echo "SETUSER" "0" "root" > ${SERVICEPIPE}
 		exit 0
 		;;
 	"shutdown")
-		makeMessagePipe
-		echo "SHUTDOWN" > ${SERVICEPIPE}
+		if [ "$(id -u)" -ne 0 ];then
+			printInfo "Must be root to shutdown ..."
+			exit 0
+		fi
+		if [ "X$1" = "X-f" ];then
+			printInfo "Forced power off ..."
+			$BINDIR/poweroff -h now
+		else
+			makeMessagePipe
+			echo "SHUTDOWN" > ${SERVICEPIPE}
+		fi
 		exit 0
 		;;
 	"reboot")
+		if [ "$(id -u)" -ne 0 ];then
+			printInfo "Must be root to reboot ..."
+			exit 0
+		fi
 		if [ "X$1" = "X-f" ];then
+			printInfo "Forced reboot ..."
 			$BINDIR/poweroff -r
 		else
 			makeMessagePipe
@@ -595,8 +715,8 @@ case $(basename $STARTEDAS) in
 		exit 0
 		;;
 	*)
-		makeMessagePipe
-		main $@
+		printInfo "Called as $0 ..."
+		exit 0
 		;;
 esac
 
@@ -609,8 +729,11 @@ while [ $IMRUNNING -eq 1 ]
 		fi
 		data="$(timeout 5.0 cat ${SERVICEPIPE} 2>/dev/null)"
 		if [ ! "X$data" = "X" ];then
-			echoWrap $data
-			main $data
+			while read
+				do
+					printInfo "$REPLY"
+					main $REPLY
+				done < <(echo "$data")
 		fi
 	done
 

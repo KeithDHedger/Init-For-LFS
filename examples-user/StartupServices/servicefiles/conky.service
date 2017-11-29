@@ -1,0 +1,2 @@
+COMMAND conky -c /home/keithhedger/ConkyThemes/conkyrc
+RUNTYPE	nocontrol

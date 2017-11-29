@@ -1,0 +1,13 @@
+This folder contains an example of using Init-For-LFS to start up a users desktop, copy the StartupServices folder to your home directory, and start services by:
+
+servicermt RUNALL
+
+This will go through the  '~/StartupServices/servicedata/services' file starting any services and running any commands it sees, this is my start up file so you will of course have to modify it to suit yourself.
+
+I use the xinitrc.lfs example also in this folder to actually start the services when starting X.
+Runtime folders will be created when you run the above command.
+
+For extra info on what commands can be run use:
+
+servicermt HELP
+
