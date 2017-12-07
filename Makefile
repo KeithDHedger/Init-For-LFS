@@ -43,3 +43,7 @@ local:
 	( cd $(LOCALFOLDER); ln -sfv runservices reboot )
 	( cd $(LOCALFOLDER); ln -sfv runservices servicermt )
 
+clean:
+	rm runservices
+
+
