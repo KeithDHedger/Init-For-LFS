@@ -5,6 +5,7 @@ PREFIX=/usr
 SYSCONFDIR=/etc
 SBINDIR=/sbin
 BINDIR=$(PREFIX)/bin
+LOCALFOLDER=`pwd`/localtest
 
 all:
 	cp runservices.main runservices
@@ -31,3 +32,14 @@ install:
 	cp -r scripts/sysconfig $(DESTDIR)$(SYSCONFDIR)
 	cp -r scripts/services $(DESTDIR)/lib
 	( cd $(DESTDIR)/lib; ln -sfv services lsb )
+
+local:
+	cp runservices.main $(LOCALFOLDER)/runservices
+	sed -i "s|@@SYSCONFDIR@@|$(LOCALFOLDER)|g" $(LOCALFOLDER)/runservices
+	sed -i "s|@@SBINDIR@@|$(LOCALFOLDER)|g" $(LOCALFOLDER)/runservices
+	sed -i "s|@@VERSION@@|$(VERSION)|g" $(LOCALFOLDER)/runservices
+	( cd $(LOCALFOLDER); ln -sfv runservices init )
+	( cd $(LOCALFOLDER); ln -sfv runservices shutdown )
+	( cd $(LOCALFOLDER); ln -sfv runservices reboot )
+	( cd $(LOCALFOLDER); ln -sfv runservices servicermt )
+
