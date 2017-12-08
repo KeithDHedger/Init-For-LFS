@@ -21,9 +21,11 @@
 
 mountTmpFS ()
 {
-	if [ "X$(basename $STARTEDAS)" = "Xinit" ];then
-		if ! mountpoint "@@SYSCONFDIR@@/StartupServices/runtime" &>/dev/null;then
-			mount -t tmpfs -o size=2m tmpfs "@@SYSCONFDIR@@/StartupServices/runtime"
+	local userid=$(id -u)
+
+	if [ $userid -eq 0 ];then
+		if ! mountpoint ${SERVICERUNFOLDER} &>/dev/null;then
+			mount -t tmpfs -o size=2m tmpfs ${SERVICERUNFOLDER}
 		fi
 	fi
 }
@@ -37,7 +39,7 @@ makeMessagePipe ()
 	if [ -w ${SERVICERUNFOLDER} ];then
 		while [ ! -e ${SERVICEPIPE} ]
 			do
-				printInfo "No service pipe at ${SERVICEPIPE} trying again in 5 seconds ..."
+				printInfo "No service pipe trying again in 5 seconds ..."
 				sleep 5
 				mkfifo ${SERVICEPIPE} &>/dev/null||true
 			done
@@ -63,46 +65,12 @@ testVarType ()
 	esac
 }
 
-#set file permissions for user files $1=username, $2 perms
-setFilePerms ()
-{
-	if [ $USERID -ne 0 ] && [ "X$USERNAME" != "X" ];then
-		chown $USERNAME:$USERNAME "$1" &>/dev/null||true
-	fi
-	chmod $2 "$1" &>/dev/null||true
-}
-
-runCommandAsUser ()
-{
-	if [ $USERID -ne 0 ];then
-		(
-			sudo -u "$USERNAME" /bin/bash - <<EOF
-(
-:
-$1
-) &
-EOF
-		) &
-	else
-		(
-			:
-			$1 &>/dev/null
-		) &
-	fi
-}
-
 initBaseFolders ()
 {
 
 	local basefolder
 
-	if [ -z "$USERID" ];then
-		USERID=0
-		USERNAME="root"
-	fi
-
-	if [ $(testVarType "$USERID";echo $? ) -eq 1 ] && [ "$USERID" -ne 0 ] && [ $(
-	testVarType "$USERNAME";echo $? ) -eq 2 ];then
+	if [ $(testVarType $USERID;echo $? ) -eq 1 ] && [ $USERID -ne 0 ] && [ $(testVarType $USERNAME;echo $? ) -eq 2 ];then
 		basefolder="$(getent passwd $USERNAME | cut -d : -f 6)"
 	else
 		basefolder="@@SYSCONFDIR@@"
@@ -122,12 +90,12 @@ initBaseFolders ()
 	PIDFOLDER=${SERVICERUNFOLDER}/servicepids
 	LOGSFOLDER=${SERVICERUNFOLDER}/servicelogs
 
-	SERVICEPIPE="@@SYSCONFDIR@@/StartupServices/runtime/servicepipe"
+	SERVICEPIPE="/etc/StartupServices/runtime/servicepipe"
 
 	mkdir -p "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	if [ $USERID -ne 0 ];then
 		chown $USERNAME:$USERNAME "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
-		chmod 755 "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
+		chmod 755 $USERNAME:$USERNAME "$SERVICERUNFILES" "$PIDFOLDER" "$LOGSFOLDER" &>/dev/null||true
 	fi
 }
 
@@ -139,7 +107,6 @@ init ()
 
 	export BINDIR="@@SBINDIR@@"
 	export VERSION="@@VERSION@@"
-	export DISPLAY=":0.0"
 
 	VERBOSELEVEL=2
 
@@ -285,7 +252,7 @@ doRunService ()
 						$command &  2>&1 |tee -a $logfile
 						pid=$!
 					else
-						export DISPLAY=":0.0";su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
+						su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
 						pid=$!
 					fi
 #check whether process is still running
@@ -316,11 +283,10 @@ doRunService ()
 		if [ $runtype = "keepalive" ];then
 			touch ${SERVICERUNFILES}/${base}.${PIDFILECNT}.keepalive
 			file=${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile
-
 			cat > $file << EOF
 #!/bin/bash
 	exec 2>/dev/null
-	while [ -e "${SERVICERUNFILES}/${base}.${PIDFILECNT}.keepalive" ]
+	while [ -e ${base}.${PIDFILECNT}.keepalive ]
 		do
 			$command & 2>&1 |tee -a $logfile
 			pid=\$!
@@ -332,14 +298,13 @@ doRunService ()
 			sleep 1
 		done
 EOF
-			setFilePerms "$file" 755
+			chmod +x $file
 			if [ $USERID -eq 0 ];then
-				(export DISPLAY=":0.0";${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile &>/dev/null) &
-				printInfo "${SERVICERUNFILES}/$base launched succsefully"
+				(cd ${SERVICERUNFILES};./${base}.${PIDFILECNT}.runfile &>/dev/null) &
 			else
-				runCommandAsUser "${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile"
-				printInfo "${base}.${PIDFILECNT} launched succsefully"
+				(cd ${SERVICERUNFILES};su - $USERNAME -c "./${base}.${PIDFILECNT}.runfile &>/dev/null") &
 			fi
+			printInfo "$base launched succsefully"
 		fi
 
 		if [ $runtype = "nocontrol" ];then
@@ -351,7 +316,7 @@ EOF
 						$command &  2>&1 |tee -a $logfile
 						pid=$!
 					else
-						export DISPLAY=":0.0";su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
+						su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
 						pid=$!
 					fi
 #check whether process is still running
@@ -383,7 +348,7 @@ EOF
 			if [ $USERID -eq 0 ];then
 				$command 2>&1 |tee -a $logfile
 			else
-				export DISPLAY=":0.0";su - $USERNAME -c "($command 2>&1 |tee -a $logfile)"
+				su - $USERNAME -c "($command 2>&1 |tee -a $logfile)"
 			fi
 		fi
 	fi
@@ -457,28 +422,16 @@ runAllServices ()
 					runOneService ${replyarray[0]%%.?*} ${replyarray[1]}
 				else
 					printInfo "Evaluating command $REPLY"
-					export DISPLAY=":0.0";su - $USERNAME -c "${REPLY}"
+#					if [ $USERID -eq 0 ];then
+#						eval "${REPLY}"
+#					else
+					su - $USERNAME -c "${REPLY}"
+#					fi
 				fi
 			fi
 		done
 	exec {fd}<&-
 }	
-
-killServiceNamed ()
-{
-	local servname
-
-	for arg in ${PIDFOLDER}/${1}.*.pid
-		do
-			servname=$(basename ${arg%.pid})
-			rm ${SERVICERUNFILES}/${servname}.keepalive &>/dev/null||true
-			kill -9 $(cat $arg) &>/dev/null
-			wait $(cat $arg) &>/dev/null
-			rm  $arg &>/dev/null||true
-			rm ${SERVICERUNFILES}/${servname}.runfile &>/dev/null||true
-			printInfo "Killed $(basename ${arg%.pid})"
-		done
-}
 
 killService ()
 {
@@ -495,7 +448,6 @@ killService ()
 		printInfo "$serv not under my control ..."
 	fi
 }
-
 
 killAllServices ()
 {
@@ -624,8 +576,7 @@ main ()
 			echoWrap "Format:"
 			echoWrap "servicermt RUN servicename. Run service 'servicename' ( without suffix )."
 			echoWrap "servicermt RUNALL. Run all services for current user."
-			echoWrap "servicermt KILLBYNAME servicename. Kill all services named servicename."
-			echoWrap "servicermt KILL servicename. Kill single service named servicename"
+			echoWrap "servicermt KILL servicename. Kill single servoce by name."
 			echoWrap "servicermt KILLALL. Kill all running services."
 			echoWrap "servicermt LOGFILE servicename|ME. Show log for 'servicename' or main log ( ME )."
 			echoWrap "servicermt RMLOG servicename. Delete log for 'servicename'."
@@ -661,9 +612,6 @@ main ()
 		"KILLALL")
 			killAllServices
 			printInfo "Done killall services"
-			;;
-		"KILLBYNAME")
-			killServiceNamed $2
 			;;
 		"LOGFILE")
 			printLogfile $2
@@ -768,7 +716,7 @@ case $(basename $STARTEDAS) in
 		;;
 	*)
 		printInfo "Called as $0 ..."
-#		exit 0
+		exit 0
 		;;
 esac
 
