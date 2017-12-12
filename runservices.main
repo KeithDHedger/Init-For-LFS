@@ -580,23 +580,27 @@ showStatus ()
 
 doReboot ()
 {
+	USERID=0
+	USERNAME="root"
+	
+	initBaseFolders
 	killAllServices
-	rm  ${SERVICEPIPE}
+	rm -f ${SERVICEPIPE}
+	umount -l "$SERVICERUNFOLDER"
 	$CONFFOLDER/StartupServices/startups/3
-	umount -f "$SERVICERUNFOLDER" &>/dev/null
-	mount -n -o remount,ro / &>/dev/null
-	IMRUNNING=0
 	$BINDIR/poweroff -r now
 }
 
 doShutdown ()
 {
+	USERID=0
+	USERNAME="root"
+	
+	initBaseFolders
 	killAllServices
-	rm  ${SERVICEPIPE}
+	rm -f ${SERVICEPIPE}
+	umount -l "$SERVICERUNFOLDER"
 	$CONFFOLDER/StartupServices/startups/3
-	umount -f "$SERVICERUNFOLDER" &>/dev/null
-	mount -n -o remount,ro / &>/dev/null
-	IMRUNNING=0
 	$BINDIR/poweroff -h now
 }
 
@@ -758,6 +762,13 @@ case $(basename $STARTEDAS) in
 			printInfo "Forced reboot ..."
 			$BINDIR/poweroff -r
 		else
+			if [ "X$SUDO_USER" != "X" ];then
+				USERID=$SUDO_UID
+				USERNAME="$SUDO_USER"
+				initBaseFolders
+				killAllServices
+			fi
+
 			makeMessagePipe
 			echo "REBOOT" > ${SERVICEPIPE}
 		fi
@@ -783,4 +794,3 @@ while [ $IMRUNNING -eq 1 ]
 				main $REPLY
 			done <${SERVICEPIPE}
 	done
-
