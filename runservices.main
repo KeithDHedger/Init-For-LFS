@@ -483,7 +483,7 @@ killService ()
 
 	if [ -e  ${PIDFOLDER}/${serv}.pid ];then
 		rm ${SERVICERUNFILES}/${serv}.keepalive &>/dev/null||true
-		kill -9 $(cat ${PIDFOLDER}/${serv}.pid)
+		kill -9 $(cat ${PIDFOLDER}/${serv}.pid) &>/dev/null
 		wait $(cat ${PIDFOLDER}/${serv}.pid) &>/dev/null
 		rm  ${PIDFOLDER}/$serv.pid &>/dev/null||true
 		rm ${SERVICERUNFILES}/${serv}.runfile &>/dev/null||true
@@ -582,7 +582,8 @@ doReboot ()
 {
 	USERID=0
 	USERNAME="root"
-	
+
+	who|grep -v root|awk '{print $1}'|sort -u|xargs -r pkill -u &>/dev/null
 	initBaseFolders
 	killAllServices
 	rm -f ${SERVICEPIPE}
@@ -596,6 +597,7 @@ doShutdown ()
 	USERID=0
 	USERNAME="root"
 	
+	who|grep -v root|awk '{print $1}'|sort -u|xargs -r pkill -u &>/dev/null
 	initBaseFolders
 	killAllServices
 	rm -f ${SERVICEPIPE}
