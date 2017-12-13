@@ -73,6 +73,12 @@ setFilePerms ()
 }
 
 #$1 command $2 logfile
+runSimpleCommand ()
+{
+	( su - $USERNAME -c "$1" 2>&1 & echo "$!">"${SERVICERUNFOLDER}/lastpid" & ) |tee -a "$2"
+}
+
+#$1 command $2 logfile
 runCommandAsUser ()
 {
 	if [ "X$USERNAME" = "X" ];then
@@ -277,32 +283,28 @@ doRunService ()
 			failed=0
 			for ((j=0;j<RETRYS;j++))
 				do
-					if [ $USERID -eq 0 ];then
-						$command &  2>&1 |tee -a $logfile
-						pid=$!
-					else
-						export DISPLAY=":0.0";su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
-						pid=$!
+					runSimpleCommand "$command" "$logfile" &
+					pid=$(cat "${SERVICERUNFOLDER}/lastpid" 2>/dev/null)
+					rm "${SERVICERUNFOLDER}/lastpid" &>/dev/null
+
+					if [ "X$pid" = "X" ];then
+						printInfo "Try $j failed (returned $?), Trying again ..."
+						sleep 1
+						failed=1
+						continue
 					fi
-#check whether process is still running
-					count=$(ps -A| grep $pid |wc -l)
-#if process is already terminated, then there can be two cases, the process executed and stop successfully or it is terminated abnormally
-					if [[ $count -eq 0 ]];then
-#checks if process executed successfully or not
-						if wait $pid; then
-							break;
-						else
-#process terminated abnormally
-							printInfo "Try $j failed (returned $?), Trying again ..."
-							failed=1
-						fi
-					else
-#process is still running
+					if kill -0 $pid &>/dev/null;then
 						echo $pid > $pidfile
 						break
+					else
+						printInfo "Try $j failed (returned $?), Trying again ..."
+						sleep 1
+						failed=1
 					fi
 				done
+
 			if [ $failed -eq 1 ];then
+				printInfo "Can't run $command"
 				printInfo "Giving up ..."
 			else
 				printInfo "$base launched succsefully"
@@ -328,13 +330,8 @@ doRunService ()
 		done
 EOF
 			setFilePerms "$file" 755
-#			if [ $USERID -eq 0 ];then
-#				(export DISPLAY=":0.0";${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile &>/dev/null) &
-#				printInfo "${SERVICERUNFILES}/$base launched succsefully"
-#			else
-				runCommandAsUser "${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile" "$logfile"
-				printInfo "${base}.${PIDFILECNT} launched."
-#			fi
+			runCommandAsUser "${SERVICERUNFILES}/${base}.${PIDFILECNT}.runfile" "$logfile"
+			printInfo "${base}.${PIDFILECNT} launched."
 		fi
 
 		if [ $runtype = "nocontrol" ];then
@@ -342,14 +339,8 @@ EOF
 			for ((j=0;j<RETRYS;j++))
 				do
 
-#					if [ $USERID -eq 0 ];then
-#						$command &  2>&1 |tee -a $logfile
-#						pid=$!
-#					else
-#						su - $USERNAME -c "($command 2>&1 |tee -a $logfile)" &
-						su - $USERNAME -c "$command &>$logfile" &
-						pid=$!
-#					fi
+					su - $USERNAME -c "$command &>$logfile" &
+					pid=$!
 #check whether process is still running
 					count=$(ps -A| grep $pid |wc -l)
 #if process is already terminated, then there can be two cases, the process executed and stop successfully or it is terminated abnormally
@@ -376,12 +367,7 @@ EOF
 
 #wait for command to finish
 		if [ $runtype = "wait" ];then
-#			if [ $USERID -eq 0 ];then
-#				$command 2>&1 |tee -a $logfile
-#			else
-#				su - $USERNAME -c "($command 2>&1 |tee -a $logfile)"
 				su - $USERNAME -c "$command &>$logfile"
-#			fi
 		fi
 	fi
 }
@@ -454,7 +440,7 @@ runAllServices ()
 					runOneService ${replyarray[0]%%.?*} ${replyarray[1]}
 				else
 					printInfo "Evaluating command $REPLY"
-					export DISPLAY=":0.0";su - $USERNAME -c "${REPLY}"
+					su - $USERNAME -c "${REPLY}"
 				fi
 			fi
 		done
@@ -512,6 +498,14 @@ printLogfile ()
 	local logname="$1"
 
 	if [ "X$logname" = "XME" ];then
+		logname="runservices"
+	fi
+
+	if [ "X$logname" = "XINIT" ];then
+		USERID=-1
+		USERNAME="init"
+
+		initBaseFolders
 		logname="runservices"
 	fi
 
@@ -630,7 +624,7 @@ main ()
 			echoWrap "servicermt KILLBYNAME servicename. Kill all services named servicename."
 			echoWrap "servicermt KILL servicename. Kill single service named servicename"
 			echoWrap "servicermt KILLALL. Kill all running services."
-			echoWrap "servicermt LOGFILE servicename|ME. Show log for 'servicename' or main log ( ME )."
+			echoWrap "servicermt LOGFILE servicename|ME|INIT. Show log for 'servicename', user log ( ME ) or init log ( INIT )."
 			echoWrap "servicermt RMLOG servicename. Delete log for 'servicename'."
 			echoWrap "servicermt RMALLLOGS. Delete all service logs."
 			echoWrap "servicermt SHOWPIDS. Show all pids for current user."
@@ -640,7 +634,6 @@ main ()
 			echoWrap "servicermt SHUTDOWN"
 			echoWrap "servicermt ECHOTOPTY tty. Send output to tty"
 			echoWrap "servicermt SETVERBOSE 0|1|2. Set verbosity, 0=quiet, 1=echo to tty, 2=echo to tty and log ( default )."
-			echoWrap "servicermt USERSERVICES. Run all services for current user"
 			echoWrap
 			echoWrap "Service file format:"
 			echoWrap "COMMAND command to run"
@@ -712,10 +705,6 @@ main ()
 			USERNAME=$3
 			initBaseFolders
 			;;		
-
-		"USERSERVICES")
-			runAllServices
-			;;
 	esac
 }
 
@@ -778,7 +767,7 @@ case $(basename $STARTEDAS) in
 		;;
 	*)
 		printInfo "Called as $0 ..."
-#		exit 0
+		#exit 0
 		;;
 esac
 

@@ -1,3 +1,4 @@
+Fixed re-trying launch service that fails.
 Fixed user services not being terminated on reboot/shutdown.
 Fixed sulogin infinite loop
 Added licence stuff at to of files
