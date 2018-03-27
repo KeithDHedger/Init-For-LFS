@@ -81,16 +81,21 @@ runSimpleCommand ()
 #$1 command $2 logfile
 runCommandAsUser ()
 {
-	if [ "X$USERNAME" = "X" ];then
-		USERNAME=root
-	fi
-
-	sudo -u "$USERNAME" /bin/bash - <<EOF
+	if [ "X$USERNAME" = "X" ] || [ "X$UID" = "X0" ];then
+		/bin/bash - <<EOF
 (
 :
 $1
 )  &>>"$2" &
 EOF
+	else
+		sudo -u "$USERNAME" /bin/bash - <<EOF
+(
+:
+$1
+)  &>>"$2" &
+EOF
+	fi
 }
 
 initBaseFolders ()
