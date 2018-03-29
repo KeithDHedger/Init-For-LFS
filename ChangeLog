@@ -1,3 +1,4 @@
+Removed using sudo now uses 'su'.
 Fixed using sudo as root.
 Fixed re-trying launch service that fails.
 Fixed user services not being terminated on reboot/shutdown.

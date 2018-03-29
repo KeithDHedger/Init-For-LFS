@@ -79,31 +79,18 @@ runSimpleCommand ()
 }
 
 #$1 command $2 logfile
-runCommandAsUserY ()
-{
-	if [ "X$USERNAME" = "X" ] ;then
-		USERNAME="root"
-	fi
-	sudo -u "$USERNAME" /bin/bash - <<EOF
-(
-:
-$1
-)  &>>"$2" &
-EOF
-}
-
 runCommandAsUser ()
 {
-	if [ "X$USERNAME" = "X" ] ;then
-		USERNAME="root"
+	if [ "X$USERNAME" = "X" ];then
+		USERNAME=root
 	fi
-	sudo -u "$USERNAME" /bin/bash - <<EOF
+	su -c '/bin/bash -l <<EOF
 (
 :
-$1
-)  &>>"$2" &
+'"$1"'
+)  &>>'"$2"' &
 EOF
-	fi
+' $USERNAME
 }
 
 initBaseFolders ()
