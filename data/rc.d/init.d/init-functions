@@ -70,7 +70,9 @@ FAILURE_SUFFIX="${BRACKET}[${FAILURE} FAIL ${BRACKET}]${NORMAL}"
 WARNING_SUFFIX="${BRACKET}[${WARNING} WARN ${BRACKET}]${NORMAL}"
 INFO_SUFFIX="${BRACKET}[${INFO} INFO ${BRACKET}]${NORMAL}"
 
-[ -r /etc/sysconfig/rc.site ]  && . /etc/sysconfig/rc.site
+#[ -r /etc/sysconfig/rc.site ]  && . /etc/sysconfig/rc.site
+
+export PATH="${PATH}:/sbin:/bin:/usr/sbin:/bin"
 
 prettyInfo ()
 {

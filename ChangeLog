@@ -1,3 +1,5 @@
+Added export PATH to functions file.
+Fixed path to poweroff.
 Removed using sudo now uses 'su'.
 Fixed using sudo as root.
 Fixed re-trying launch service that fails.
