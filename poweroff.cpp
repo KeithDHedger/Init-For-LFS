@@ -1,6 +1,6 @@
 #if 0
 
-#©keithhedger Fri 17 Mar 10:49:47 GMT 2017 kdhedger68713@gmail.com
+#©keithhedger Fri 17 Mar 10:49:47 GMT 2017 keithdhedger@gmail.com
 
 g++ -Wall "$0" -o poweroff||exit 1
 
