@@ -581,7 +581,7 @@ doReboot ()
 	initBaseFolders
 	killAllServices
 	rm -f ${SERVICEPIPE}
-	umount -l "$SERVICERUNFOLDER"
+	umount -lf "$SERVICERUNFOLDER"
 	$CONFFOLDER/StartupServices/startups/3
 	$BINDIR/poweroff -r now
 }
@@ -595,7 +595,7 @@ doShutdown ()
 	initBaseFolders
 	killAllServices
 	rm -f ${SERVICEPIPE}
-	umount -l "$SERVICERUNFOLDER"
+	umount -lf "$SERVICERUNFOLDER"
 	$CONFFOLDER/StartupServices/startups/3
 	$BINDIR/poweroff -h now
 }
