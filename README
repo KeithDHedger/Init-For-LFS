@@ -99,7 +99,8 @@ The (B)LFS sysv startup scripts can be used 'as is' by the usual method of placi
 More documentaion to come!
 A small boot movie is in the git repo ( "LFSDev.webm" ) which shows a basic lfs system booting using this init system.
 
-
+BUGS etc.
+kdhedger68713@gmail.com
 
 
 
