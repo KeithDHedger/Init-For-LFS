@@ -36,6 +36,7 @@ fi
 
 mkdir -p /run/var /run/lock /run/shm
 chmod 1777 /run/shm
+chmod 1777 /run/lock
 
 if ! mountpoint /proc >/dev/null; then
 	MOUNTRESULT="OK"
@@ -58,7 +59,34 @@ if ! mountpoint /dev >/dev/null; then
 	prettyMsgResult $MOUNTRESULT
 fi
 
+mkdir -p /dev/shm||true
+if ! mountpoint /dev/shm >/dev/null; then
+	MOUNTRESULT="OK"
+	prettyMsgStart "Mounting virtual file system: /dev/shm" 
+	mount -o nosuid,nodev /dev/shm &>/dev/null|| MOUNTRESULT="FAIL"
+	prettyMsgResult $MOUNTRESULT
+fi
+
 cp -a /lib/udev/devices/* /dev
 ln -sfn /run/shm /dev/shm
+     mkdir -p /sys/fs/cgroup||true
+if ! mountpoint /dev/shm >/dev/null; then
+	MOUNTRESULT="OK"
+	prettyMsgStart "Mounting virtual file system: /dev/shm" 
+	mount -o nosuid,noexec,nodev /sys/fs/cgroup &>/dev/null|| MOUNTRESULT="FAIL"
+	prettyMsgResult $MOUNTRESULT
+fi
+
+MOUNTRESULT="OK"
+prettyMsgStart "Creating symllinks in /dev ..." 
+ln -sf /proc/self/fd/0 /dev/stdin||MOUNTRESULT="FAIL"
+ln -sf /proc/self/fd/1 /dev/stdout||MOUNTRESULT="FAIL"
+ln -sf /proc/self/fd/2 /dev/stderr||MOUNTRESULT="FAIL"
+ln -sf /proc/self/fd /dev/fd||MOUNTRESULT="FAIL"
+
+if [ -e /proc/kcore ]; then
+	ln -sf /proc/kcore /dev/core||MOUNTRESULT="FAIL"
+fi
+prettyMsgResult $MOUNTRESULT    
 
 exit 0

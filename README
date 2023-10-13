@@ -3,6 +3,9 @@ How To
 !!!MAKE BACKUPS OF ALL MOVED OVERWRITTEN FILES OR ELSE!!!
 !!sudo must be installed!!
 
+!Updated for LFS 12.0
+If you need to use for a lower version use the version in releases.
+
 As root:
 
 make install
